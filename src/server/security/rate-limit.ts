@@ -35,7 +35,7 @@ export async function checkIdeaRateLimit(request: Request): Promise<RateResult> 
   const address = request.headers.get("x-real-ip")?.trim() || "local-anonymous";
   const identity = createHash("sha256").update(address).digest("hex");
 
-  if (process.env.NODE_ENV === "production") return distributedLimit(identity);
+  if (process.env.NODE_ENV === "production" && process.env.LOCAL_AI_RATE_LIMIT !== "true") return distributedLimit(identity);
 
   const now = Date.now();
   const current = localWindows.get(identity);

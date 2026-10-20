@@ -7,10 +7,10 @@ GatherWise is a practical event-planning workspace for weddings, birthdays, and 
 - Create an event with its date, guest estimate, budget, location, and priorities.
 - Generate an initial budget allocation and planning checklist with deterministic domain logic.
 - Complete tasks and keep plans in browser-local storage without requiring an account.
-- Request tailored inspiration from Gemini through a server-only, structured-output API route.
+- Request tailored inspiration from Gemini 3.5 Flash-Lite through a server-only, structured-output API route, with Gemini 3.8 Flash as a bounded transient-error fallback.
 - Keep AI calls bounded by input size, output tokens, request time, and a three-request-per-minute limit.
 - Validate event input and persisted plans with Zod.
-- Run type checking, lint, domain tests, and a production build in GitHub Actions.
+- Run type checking, lint, domain tests, and a production build locally. GitHub Actions are disabled for this project.
 - Use the demo without a third-party key or paid service.
 
 The current storage is local to one browser. It is suitable for the demo, not shared or multi-device persistence. Vendor prices and availability are estimates and are never presented as confirmed bookings.
@@ -30,7 +30,7 @@ pnpm dev
 
 Open `http://localhost:3000`. Use **Plan an event** to add an event. Plans stay in the current browser under the `gatherwise.plans.v1` local-storage key. Clear that key in browser storage to reset the demo.
 
-The deterministic planner works without external services. To enable **Ask Gemini**, copy `.env.example` to `.env.local` and add a Google AI Studio key from a project that has no paid billing enabled. Use the model configured by `GEMINI_MODEL`. Keep `.env.local` private; it is ignored by Git. Production AI requests also require an Upstash Redis REST URL and token so the rate limit is shared across server instances. Without those production settings, the AI route fails closed. The project does not create or enable paid accounts or services.
+The deterministic planner works without external services. To enable **Ask Gemini**, copy `.env.example` to `.env.local` and add a Google AI Studio key from a project that has no paid billing enabled. `GEMINI_MODEL` defaults to `gemini-3.5-flash-lite`; `GEMINI_FALLBACK_MODEL` defaults to `gemini-3.8-flash`. The fallback is used only after network/5xx failures, not on quota or configuration errors. Keep `.env.local` private; it is ignored by Git. Production AI requests also require an Upstash Redis REST URL and token so the rate limit is shared across server instances. Without those production settings, the AI route fails closed. `LOCAL_AI_RATE_LIMIT=true` is only for a private local smoke test and must not be enabled for a public deployment. The project does not create or enable paid accounts or services.
 
 ## Quality checks
 
@@ -41,7 +41,7 @@ pnpm lint
 pnpm build
 ```
 
-The tests cover schema rejection, integer budget reconciliation, schedule generation, task completion, request validation, usage limits, model output validation, and safe provider failures. Tests mock Gemini and do not consume API quota.
+The tests cover schema rejection, integer budget reconciliation, schedule generation, task completion, request validation, usage limits, model output validation, transient fallback behavior, and safe provider failures. Tests mock Gemini and do not consume API quota.
 
 ## Architecture
 
@@ -75,7 +75,7 @@ The app is a small modular monolith. UI components collect and present data, dom
 | Code quality | Strict TypeScript, small planning module, schema inferred from Zod, reproducible pnpm lockfile |
 | Security | Runtime validation at request, provider-output, event, and storage boundaries; server-only key; user-controlled AI call; distributed production limiter |
 | Efficiency | Deterministic local planning, input/output bounds, one bounded provider request, no network dependency for the core flow |
-| Testing | Unit tests for budget, scheduling, validation, progress, Gemini output, and API failures; CI checks |
+| Testing | Unit tests for budget, scheduling, validation, progress, Gemini output, provider fallback, and API failures; locally run quality gates |
 | Accessibility | Labeled inputs, keyboard-operable controls, focus styles, reduced-motion support, status announcements |
 | Problem alignment | Event context, budgets, timelines, vendor checklist tasks, and personalized priorities |
 

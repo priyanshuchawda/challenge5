@@ -25,12 +25,14 @@ afterEach(() => {
 describe("Gemini planning provider", () => {
   it("sends bounded event context and validates the structured response", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubEnv("GEMINI_MODEL", "");
+    vi.stubEnv("GEMINI_FALLBACK_MODEL", "");
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(validIdeas) }] } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(generateEventIdeas(input)).resolves.toEqual(validIdeas);
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain("/models/gemini-3.8-flash:generateContent");
+    expect(url).toContain("/models/gemini-3.5-flash-lite:generateContent");
     expect((options.headers as Record<string, string>)["x-goog-api-key"]).toBe("test-key");
     expect(String(options.body)).not.toContain("Test celebration");
     expect(String(options.body)).toContain("Step-free access");
@@ -49,7 +51,38 @@ describe("Gemini planning provider", () => {
 
   it("maps upstream quota responses to a controlled provider error", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 429 })));
+    vi.stubEnv("GEMINI_MODEL", "gemini-primary-test");
+    vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-fallback-test");
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 429 }));
+    vi.stubGlobal("fetch", fetchMock);
     await expect(generateEventIdeas(input)).rejects.toMatchObject({ status: "quota" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-primary-test");
+  });
+
+  it("falls back to Flash only after a transient primary server failure", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubEnv("GEMINI_MODEL", "gemini-primary-test");
+    vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-fallback-test");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(validIdeas) }] } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(generateEventIdeas(input)).resolves.toEqual(validIdeas);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-primary-test");
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("gemini-fallback-test");
+  });
+
+  it("does not retry bad credentials or model configuration against fallback", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubEnv("GEMINI_MODEL", "gemini-primary-test");
+    vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-fallback-test");
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 400 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(generateEventIdeas(input)).rejects.toMatchObject({ status: "unavailable", httpStatus: 400 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
