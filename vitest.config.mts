@@ -6,6 +6,11 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
-    coverage: { reporter: ["text", "html"] },
+    coverage: {
+      include: ["src/app/api/**/*.ts", "src/features/planning/*.ts", "src/server/**/*.ts"],
+      exclude: ["**/*.test.ts"],
+      reporter: ["text", "html"],
+      thresholds: { statements: 95, branches: 88, functions: 98, lines: 95 },
+    },
   },
 });

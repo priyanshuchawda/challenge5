@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { readPlans } from "./plan-store";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { getPlansSnapshot, getServerPlansSnapshot, readPlans, savePlans, subscribeToPlans } from "./plan-store";
 import { createPlan } from "./planner";
 import { eventRequestSchema } from "./schema";
 
@@ -32,5 +32,63 @@ describe("local plan storage boundary", () => {
     expect(readPlans("not-json")).toEqual([]);
     expect(readPlans(JSON.stringify([{ ...plan, budget: [{ amount: -2 }] }]))).toEqual([]);
     expect(readPlans(null)).toEqual([]);
+  });
+});
+
+
+describe("browser storage adapter", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reads and validates snapshots from local storage", () => {
+    const values = new Map([["gatherwise.plans.v1", JSON.stringify([plan])]]);
+    vi.stubGlobal("window", {
+      localStorage: { getItem: (key: string) => values.get(key) ?? null },
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => true,
+    });
+    expect(getPlansSnapshot()).toBe(JSON.stringify([plan]));
+    expect(getServerPlansSnapshot()).toBeNull();
+  });
+
+  it("persists schema-valid plans and notifies local subscribers", () => {
+    const values = new Map<string, string>();
+    const listeners = new Map<string, Set<() => void>>();
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+      addEventListener: (name: string, listener: () => void) => {
+        const group = listeners.get(name) ?? new Set();
+        group.add(listener);
+        listeners.set(name, group);
+      },
+      removeEventListener: (name: string, listener: () => void) => listeners.get(name)?.delete(listener),
+      dispatchEvent: (event: Event) => {
+        listeners.get(event.type)?.forEach((listener) => listener());
+        return true;
+      },
+    });
+
+    const onChange = vi.fn();
+    const unsubscribe = subscribeToPlans(onChange);
+    savePlans([plan]);
+    expect(readPlans(getPlansSnapshot())).toEqual([plan]);
+    expect(onChange).toHaveBeenCalledOnce();
+    unsubscribe();
+    listeners.get("gatherwise:plans-changed")?.forEach((listener) => listener());
+    expect(onChange).toHaveBeenCalledOnce();
+  });
+
+  it("rejects invalid state before writing and safely handles server-side calls", () => {
+    const setItem = vi.fn();
+    vi.stubGlobal("window", { localStorage: { setItem }, dispatchEvent: vi.fn() });
+    expect(() => savePlans([{ ...plan, id: "" }])).toThrow("The event plan could not be saved.");
+    expect(setItem).not.toHaveBeenCalled();
+    vi.stubGlobal("window", undefined);
+    expect(getPlansSnapshot()).toBeNull();
+    expect(() => savePlans([plan])).not.toThrow();
+    expect(subscribeToPlans(vi.fn())()).toBeUndefined();
   });
 });

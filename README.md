@@ -46,7 +46,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-Playwright uses the installed system Chromium and the production server; run `pnpm build` before `pnpm test:e2e`. Browser coverage checks expense overspend warnings, saved vendor and schedule edits, CSV export, print mode, and axe rules across four core views at desktop and mobile sizes. The suite has 19 unit tests plus 3 production-browser tests. `pnpm test:coverage` reports V8 coverage for backend modules exercised by unit tests: the latest run measured 74.3% lines overall, 83.7% for the planning domain, and 100% lines in the deterministic planner. API routes, browser storage, and rate limiting have lower line coverage and remain areas to expand. UI coverage comes from Playwright and axe checks, not the Vitest line report. Tests mock Gemini and do not consume API quota.
+Playwright uses the installed system Chromium and the production server; run `pnpm build` before `pnpm test:e2e`. Browser coverage checks expense overspend warnings, saved vendor and schedule edits, CSV export, print mode, and axe rules across four core views at desktop and mobile sizes. The suite has 43 unit tests plus 4 production-browser tests. The latest `pnpm test:coverage` run measured 97.4% lines overall, 100% for the planning domain, 96.15% for the AI route, and 100% for the rate limiter. The measured Vitest coverage is for backend modules exercised by unit tests; UI behavior is covered separately with Playwright and axe checks. Tests mock Gemini and do not consume API quota.
 
 ## Architecture
 

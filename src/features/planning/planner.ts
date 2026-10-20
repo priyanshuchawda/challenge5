@@ -78,7 +78,7 @@ export function remainingBudget(limit: number, expenses: Expense[]): number {
   return limit - totalSpent(expenses);
 }
 
-export function reconcileExpenses(budget: BudgetAllocation[], expenses: Expense[]): BudgetAllocation[] {
+function reconcileExpenses(budget: BudgetAllocation[], expenses: Expense[]): BudgetAllocation[] {
   const spentByCategory = new Map<string, number>();
   for (const expense of expenses) {
     spentByCategory.set(expense.category, (spentByCategory.get(expense.category) ?? 0) + expense.amount);

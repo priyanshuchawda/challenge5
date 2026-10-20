@@ -10,6 +10,10 @@ test.beforeEach(async ({ page }) => {
 test("creates an expense, warns on overspend, and retains vendor and schedule edits", async ({ page }) => {
   await page.getByRole("button", { name: "Budget planner", exact: true }).click();
   await page.getByRole("button", { name: /Add expense/i }).click();
+  await expect(page.getByLabel("Description")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Record an expense" })).not.toBeVisible();
+  await page.getByRole("button", { name: /Add expense/i }).click();
   await page.getByLabel("Description").fill("Venue deposit");
   await page.getByLabel("Amount (INR)").fill("2000000");
   await page.getByRole("button", { name: /Save expense/i }).click();
@@ -34,6 +38,22 @@ test("exports the run of show as CSV and exposes print mode", async ({ page }) =
   await page.emulateMedia({ media: "print" });
   const printVisible = await page.locator(".run-of-show-table").evaluate((element) => getComputedStyle(element).display !== "none");
   expect(printVisible).toBe(true);
+});
+
+test("creates an event from the accessible dialog and retains it after reload", async ({ page }) => {
+  await page.getByRole("button", { name: "Plan an event" }).first().click();
+  await expect(page.getByRole("dialog", { name: "Let’s make a plan" })).toBeVisible();
+  await expect(page.getByLabel("Event name")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Let’s make a plan" })).not.toBeVisible();
+  await page.getByRole("button", { name: "Plan an event" }).first().click();
+  await page.getByLabel("Event name").fill("Anika’s 30th birthday");
+  await page.getByLabel("Celebration").selectOption("Birthday");
+  await page.getByRole("button", { name: "Create my plan" }).click();
+  await expect(page.getByRole("heading", { name: "Anika’s 30th birthday" })).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "My events" }).click();
+  await expect(page.getByText("Anika’s 30th birthday")).toBeVisible();
 });
 
 test("core views pass axe accessibility checks at desktop and mobile sizes", async ({ page }) => {

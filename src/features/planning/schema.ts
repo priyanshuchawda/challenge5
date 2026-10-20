@@ -68,7 +68,7 @@ export type EventPlan = {
   createdAt: string;
 };
 
-export const planSchema = z.object({
+const planSchema = z.object({
   id: z.string().min(1).max(100),
   request: eventRequestSchema,
   tasks: z.array(z.object({
