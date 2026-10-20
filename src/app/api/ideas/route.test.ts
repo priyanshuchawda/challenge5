@@ -35,6 +35,11 @@ function request(body: string, headers: Record<string, string> = {}) {
 }
 
 describe("POST /api/ideas", () => {
+  it("bounds API execution below the Hobby function maximum", async () => {
+    const { maxDuration } = await import("./route");
+    expect(maxDuration).toBe(45);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.checkIdeaRateLimit.mockResolvedValue({ allowed: true });

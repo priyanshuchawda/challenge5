@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "GatherWise — Celebrate with a little more ease",
-  description: "An thoughtful, practical event planning workspace for celebrations that matter.",
+  description: "A thoughtful, practical event planning workspace for celebrations that matter.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

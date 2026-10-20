@@ -3,7 +3,7 @@ import { ideaRefinementRequestSchema, ideaRequestSchema } from "@/features/plann
 import { generateEventIdeas, GeminiError } from "@/server/ai/gemini";
 import { checkIdeaRateLimit } from "@/server/security/rate-limit";
 
-export const maxDuration = 25;
+export const maxDuration = 45;
 const BODY_LIMIT = 8_192;
 
 export async function POST(request: Request) {

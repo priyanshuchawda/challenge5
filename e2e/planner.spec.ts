@@ -120,3 +120,19 @@ test("core views pass axe accessibility checks at desktop and mobile sizes", asy
     }
   }
 });
+
+test("serves baseline security headers on the app and AI API", async ({ page }) => {
+  const pageResponse = await page.goto("/");
+  expect(pageResponse?.headers()).toMatchObject({
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "camera=(), microphone=(), geolocation=()",
+    "strict-transport-security": "max-age=31536000; includeSubDomains",
+  });
+  expect(pageResponse?.headers()["x-powered-by"]).toBeUndefined();
+  const apiResponse = await page.request.post("/api/ideas", { data: { invalid: true } });
+  expect(apiResponse.status()).toBe(400);
+  expect(apiResponse.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(apiResponse.headers()["x-frame-options"]).toBe("DENY");
+});

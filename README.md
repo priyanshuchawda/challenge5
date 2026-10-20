@@ -21,7 +21,7 @@ The current storage is local to one browser. It is suitable for the demo, not sh
 
 ## Requirements
 
-- Node.js 22 LTS (Node 20.9+ is required by the current Next.js framework)
+- Node.js 24.x (the current Vercel default; Node 20.9+ is required by the current Next.js framework)
 - pnpm 12 (the package manager version is pinned in `package.json`)
 
 ## Run locally
@@ -33,6 +33,12 @@ pnpm dev
 ```
 
 Open `http://localhost:3000`. Use **Plan an event** to add an event. Plans stay in the current browser under the `gatherwise.plans.v1` local-storage key. Clear that key in browser storage to reset the demo.
+
+## Deploy to Vercel
+
+The project uses Next.js defaults and can be linked with the Vercel CLI. Authenticate with `vercel login`, then run `vercel link` and follow the prompts to select or create the GatherWise project. Add `GEMINI_API_KEY` as a **Production** environment variable through the Vercel dashboard or `vercel env add GEMINI_API_KEY production`. Production AI use also needs `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; without them the AI endpoint intentionally fails closed while the local planner remains usable. Add these secrets through Vercel's environment-variable prompts or project settings; never pass them as command-line arguments or commit them.
+
+Deploy a preview first with `vercel deploy`, verify the app and `/api/ideas` behavior, then publish with `vercel deploy --prod`. The CLI uses the linked project and Next.js framework defaults. `.vercelignore` excludes local environment files and build/test artifacts from uploads.
 
 The deterministic planner works without external services. To enable **Ask Gemini**, copy `.env.example` to `.env.local` and add a Google AI Studio key from a project that has no paid billing enabled. `GEMINI_MODEL` defaults to `gemini-2.5-flash-lite`; `GEMINI_FALLBACK_MODEL` defaults to `gemini-2.5-flash`. Both defaults were exercised successfully against the live API with synthetic data. The fallback is used only after network/5xx failures, not on quota or configuration errors. Keep `.env.local` private; it is ignored by Git. Production AI requests also require an Upstash Redis REST URL and token so the rate limit is shared across server instances. Without those production settings, the AI route fails closed. `LOCAL_AI_RATE_LIMIT=true` is only for a private local smoke test and must not be enabled for a public deployment. The project does not create or enable paid accounts or services.
 
