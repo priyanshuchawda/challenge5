@@ -2,6 +2,8 @@
 
 GatherWise is a practical event-planning workspace for weddings, birthdays, and community events. The application owns budgets, task status, and dates. Gemini suggests and refines ideas; it never writes financial or task state.
 
+Live demo: [gatherwise-event-planner.vercel.app](https://gatherwise-event-planner.vercel.app)
+
 ## Current foundation
 
 - Create an event with its date, guest estimate, budget, location, and priorities.
@@ -36,7 +38,7 @@ Open `http://localhost:3000`. Use **Plan an event** to add an event. Plans stay 
 
 ## Deploy to Vercel
 
-The project uses Next.js defaults and can be linked with the Vercel CLI. Authenticate with `vercel login`, then run `vercel link` and follow the prompts to select or create the GatherWise project. Add `GEMINI_API_KEY` as a **Production** environment variable through the Vercel dashboard or `vercel env add GEMINI_API_KEY production`. Production AI use also needs `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; without them the AI endpoint intentionally fails closed while the local planner remains usable. Add these secrets through Vercel's environment-variable prompts or project settings; never pass them as command-line arguments or commit them.
+The project uses Next.js defaults and can be linked with the Vercel CLI. Authenticate with `vercel login`, then run `vercel link` and follow the prompts to select or create the GatherWise project. Add `GEMINI_API_KEY` as a **Production** environment variable through the Vercel dashboard or `vercel env add GEMINI_API_KEY production`. Production AI use also needs `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; without them the AI endpoint intentionally fails closed while the local planner remains usable. Add these secrets through Vercel's environment-variable prompts or project settings; never pass them as command-line arguments or commit them. The live deployment uses Vercel's free Upstash integration and free Gemini API access; it does not enable paid billing.
 
 Deploy a preview first with `vercel deploy`, verify the app and `/api/ideas` behavior, then publish with `vercel deploy --prod`. The CLI uses the linked project and Next.js framework defaults. `.vercelignore` excludes local environment files and build/test artifacts from uploads.
 
@@ -53,7 +55,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-Playwright uses the installed system Chromium and the production server; run `pnpm build` before `pnpm test:e2e`. Browser coverage checks expense overspend warnings, saved vendor and schedule edits, custom task creation and persistence, CSV export, print mode, AI suggestion refinement without changing saved event data, and axe rules across four core views at desktop and mobile sizes. The suite has 47 unit tests plus 6 production-browser tests. The latest `pnpm test:coverage` run measured 97.51% lines overall, 100% for the planning domain, 96.29% for the AI route, and 100% for the rate limiter. The measured Vitest coverage is for backend modules exercised by unit tests; UI behavior is covered separately with Playwright and axe checks. Unit and browser tests mock Gemini and do not consume API quota.
+Playwright uses the installed system Chromium and the production server; run `pnpm build` before `pnpm test:e2e`. Browser coverage checks expense overspend warnings, saved vendor and schedule edits, custom task creation and persistence, CSV export, print mode, AI suggestion refinement without changing saved event data, security headers, and axe rules across four core views at desktop and mobile sizes. The suite has 48 unit tests plus 7 production-browser tests. The latest `pnpm test:coverage` run measured 97.51% lines overall, 100% for the planning domain, 96.29% for the AI route, and 100% for the rate limiter. The measured Vitest coverage is for backend modules exercised by unit tests; UI behavior is covered separately with Playwright and axe checks. Unit and browser tests mock Gemini and do not consume API quota.
 
 To exercise the real Gemini API with a small synthetic event, run `pnpm test:gemini:live` after setting `GEMINI_API_KEY` in `.env.local`. This is intentionally separate from `pnpm test` and CI because it uses two API requests: generate suggestions, then refine them with bounded user feedback. Both responses are validated against the application schema. It prints no prompts, credentials, or generated content. The live test uses `NODE_ENV=development` so Next loads the ignored `.env.local` file; ordinary tests remain isolated from local secrets. Never enable local-only rate-limit bypasses on a public deployment.
 
