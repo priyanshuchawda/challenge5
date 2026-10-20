@@ -12,14 +12,14 @@ export const eventRequestSchema = z.object({
 
 export type EventRequest = z.infer<typeof eventRequestSchema>;
 
-export type PlanTask = {
-  id: string;
-  title: string;
-  dueDate: string;
-  priority: "High" | "Medium" | "Low";
-  category: string;
-  completed: boolean;
-};
+export const taskDraftSchema = z.object({
+  title: z.string().trim().min(2).max(160),
+  dueDate: z.iso.date(),
+  priority: z.enum(["High", "Medium", "Low"]),
+  category: z.string().trim().min(2).max(80),
+});
+export type TaskDraft = z.infer<typeof taskDraftSchema>;
+export type PlanTask = TaskDraft & { id: string; completed: boolean };
 
 export type BudgetAllocation = {
   category: string;
@@ -115,5 +115,10 @@ export const eventIdeasSchema = z.object({
 });
 
 export type IdeaRequest = z.infer<typeof ideaRequestSchema>;
+export const ideaRefinementRequestSchema = ideaRequestSchema.extend({
+  refinement: z.string().trim().min(3).max(300),
+  currentIdeas: eventIdeasSchema,
+});
+export type IdeaRefinementRequest = z.infer<typeof ideaRefinementRequestSchema>;
 export type EventIdeas = z.infer<typeof eventIdeasSchema>;
 export const ideasResponseSchema = z.object({ ideas: eventIdeasSchema });

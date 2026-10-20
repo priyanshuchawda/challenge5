@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addExpense, allocateBudget, budgetTotal, completedTaskCount, createPlan, remainingBudget, totalSpent, updateRunOfShowItem, updateVendor } from "./planner";
+import { addExpense, addTask, allocateBudget, budgetTotal, completedTaskCount, createPlan, remainingBudget, totalSpent, updateRunOfShowItem, updateVendor } from "./planner";
 import { eventRequestSchema } from "./schema";
 
 const request = eventRequestSchema.parse({
@@ -32,6 +32,14 @@ describe("planning domain", () => {
   it("counts task completion deterministically", () => {
     const plan = createPlan(request, "test-event");
     expect(completedTaskCount(plan.tasks.map((task, index) => ({ ...task, completed: index < 2 })))).toBe(2);
+  });
+
+  it("adds validated custom tasks without mutating the saved plan", () => {
+    const plan = createPlan(request, "custom-task-event");
+    const updated = addTask(plan, { title: "Confirm quiet room", dueDate: "2027-06-10", priority: "High", category: "Accessibility" }, "custom-task-1");
+    expect(updated.tasks[0]).toEqual({ id: "custom-task-1", title: "Confirm quiet room", dueDate: "2027-06-10", priority: "High", category: "Accessibility", completed: false });
+    expect(plan.tasks).toHaveLength(6);
+    expect(() => addTask(plan, { title: "x", dueDate: "not-a-date", priority: "High", category: "Access" })).toThrow();
   });
 
   it("tracks actual expenses with integer totals and detects overspend", () => {

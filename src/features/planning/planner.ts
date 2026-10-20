@@ -1,4 +1,4 @@
-import { expenseSchema, runOfShowItemSchema, vendorSchema, type BudgetAllocation, type EventPlan, type EventRequest, type Expense, type PlanTask, type RunOfShowItem, type Vendor } from "./schema";
+import { expenseSchema, runOfShowItemSchema, taskDraftSchema, vendorSchema, type BudgetAllocation, type EventPlan, type EventRequest, type Expense, type PlanTask, type RunOfShowItem, type TaskDraft, type Vendor } from "./schema";
 
 const budgetTemplate = [
   { category: "Venue", share: 0.28, color: "#728a67" },
@@ -68,6 +68,11 @@ export function budgetTotal(allocations: BudgetAllocation[]): number {
 
 export function completedTaskCount(tasks: PlanTask[]): number {
   return tasks.filter((task) => task.completed).length;
+}
+
+export function addTask(plan: EventPlan, input: TaskDraft, id = crypto.randomUUID()): EventPlan {
+  const task = taskDraftSchema.parse(input);
+  return { ...plan, tasks: [{ ...task, id, completed: false }, ...plan.tasks] };
 }
 
 export function totalSpent(expenses: Expense[]): number {

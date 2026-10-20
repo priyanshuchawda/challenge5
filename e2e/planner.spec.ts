@@ -40,6 +40,21 @@ test("exports the run of show as CSV and exposes print mode", async ({ page }) =
   expect(printVisible).toBe(true);
 });
 
+test("adds a custom planning task and keeps it after reload", async ({ page }) => {
+  await page.getByRole("button", { name: /Add a task/i }).click();
+  await expect(page.getByRole("dialog", { name: "Add a planning task" })).toBeVisible();
+  await expect(page.getByLabel("Task", { exact: true })).toBeFocused();
+  const dialogAccessibility = await new AxeBuilder({ page }).analyze();
+  expect(dialogAccessibility.violations.map(({ id, nodes }) => ({ id, nodes: nodes.map(({ target, failureSummary }) => ({ target, failureSummary })) })), "Task dialog axe violations").toEqual([]);
+  await page.getByLabel("Task", { exact: true }).fill("Confirm quiet seating area");
+  await page.getByLabel("Category", { exact: true }).fill("Accessibility");
+  await page.getByRole("button", { name: "Add task", exact: true }).click();
+  await expect(page.getByText("Confirm quiet seating area")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Confirm quiet seating area")).toBeVisible();
+  await expect(page.getByLabel("Complete: Confirm quiet seating area")).toBeVisible();
+});
+
 test("creates an event from the accessible dialog and retains it after reload", async ({ page }) => {
   await page.getByRole("button", { name: "Plan an event" }).first().click();
   await expect(page.getByRole("dialog", { name: "Let’s make a plan" })).toBeVisible();
@@ -54,6 +69,45 @@ test("creates an event from the accessible dialog and retains it after reload", 
   await page.reload();
   await page.getByRole("button", { name: "My events" }).click();
   await expect(page.getByText("Anika’s 30th birthday")).toBeVisible();
+});
+
+test("refines AI suggestions from an untrusted text request without changing saved event data", async ({ page }) => {
+  const receivedBodies: unknown[] = [];
+  await page.route("**/api/ideas", async (route) => {
+    const body: unknown = route.request().postDataJSON();
+    receivedBodies.push(body);
+    const isRefinement = typeof body === "object" && body !== null && "refinement" in body;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ideas: {
+        theme: isRefinement ? "A thoughtful low-cost birthday" : "A relaxed garden birthday",
+        overview: "Use a few practical details to make the celebration feel personal and easy to enjoy.",
+        suggestions: [
+          { title: "Shared memory cards", detail: "Invite each guest to leave one short memory for the birthday host to read later.", category: "Activities", budgetFriendly: true },
+          { title: "Seasonal potluck table", detail: "Coordinate a simple shared menu and label dishes for guests with different dietary needs.", category: "Food", budgetFriendly: true },
+          { title: "Quiet seating corner", detail: "Set aside a calm seating area away from the main activity for guests who want a break.", category: "Accessibility", budgetFriendly: true },
+        ],
+        contingency: "Move the gathering to a confirmed indoor space if the weather changes unexpectedly.",
+      } }),
+    });
+  });
+
+  await page.getByRole("button", { name: "Inspiration", exact: true }).click();
+  await page.getByRole("button", { name: "Ask Gemini" }).click();
+  await expect(page.getByRole("heading", { name: "A relaxed garden birthday" })).toBeVisible();
+  const savedBudget = await page.evaluate(() => localStorage.getItem("gatherwise.plans.v1"));
+  await page.getByLabel("What would you like to adjust?").fill("Make it lower cost and keep the quiet seating area");
+  await page.getByRole("button", { name: "Refine these ideas" }).click();
+  await expect(page.getByRole("heading", { name: "A thoughtful low-cost birthday" })).toBeVisible();
+  expect(receivedBodies).toHaveLength(2);
+  expect(receivedBodies[1]).toMatchObject({
+    refinement: "Make it lower cost and keep the quiet seating area",
+    currentIdeas: { theme: "A relaxed garden birthday" },
+  });
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("gatherwise.plans.v1"))).toBe(savedBudget);
+  const accessibility = await new AxeBuilder({ page }).analyze();
+  expect(accessibility.violations.map(({ id }) => id)).toEqual([]);
 });
 
 test("core views pass axe accessibility checks at desktop and mobile sizes", async ({ page }) => {

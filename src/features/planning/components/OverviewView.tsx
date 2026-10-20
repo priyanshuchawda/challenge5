@@ -10,16 +10,16 @@ interface OverviewViewProps {
   formattedEventDate: string;
   onToggleTask: (taskId: string) => void;
   onNavigate: (view: "My events" | "Budget planner") => void;
-  onNotice: (message: string) => void;
+  onAddTask: () => void;
 }
 
-export function OverviewView({ plan, eventCount, completed, daysUntil, formattedEventDate, onToggleTask, onNavigate, onNotice }: OverviewViewProps) {
+export function OverviewView({ plan, eventCount, completed, daysUntil, formattedEventDate, onToggleTask, onNavigate, onAddTask }: OverviewViewProps) {
   const readyPercent = plan.tasks.length ? Math.round(completed / plan.tasks.length * 100) : 0;
   return <>
     <section className="event-banner" aria-label="Selected upcoming event">
       <div className="banner-photo" role="img" aria-label="Soft garden greenery and flowers"><div className="photo-shade" /><span className="photo-tag"><span className="live-dot" /> UP NEXT</span></div>
       <div className="banner-main">
-        <div className="banner-topline"><span className="event-type">{plan.request.type}</span><button className="more-button" aria-label="Event options" onClick={() => onNotice("Event options are coming soon.")}>···</button></div>
+        <div className="banner-topline"><span className="event-type">{plan.request.type}</span></div>
         <h2>{plan.request.name}</h2>
         <div className="event-meta"><span><CalendarDays size={15} />{formattedEventDate}</span><span><MapPin size={15} />{plan.request.location}</span></div>
         <div className="banner-bottom"><div className="guest-pile" aria-label={`${plan.request.guests} guests`}><span>M</span><span>A</span><span>R</span><span className="guest-more">+{Math.max(0, plan.request.guests - 3)}</span><small><strong>{plan.request.guests}</strong> guests</small></div><div className="countdown"><span>{daysUntil}</span><small>days to go</small></div></div>
@@ -42,7 +42,7 @@ export function OverviewView({ plan, eventCount, completed, daysUntil, formatted
           <span className="custom-check"><Check size={13} /></span><span className="task-copy"><strong>{task.title}</strong><small>{task.category}</small></span>
           <span className="task-date"><Clock3 size={13} />{formatDate(task.dueDate)}</span><span className={`priority priority-${task.priority.toLowerCase()}`}>{task.priority}</span>
         </label>)}</div>
-        <button className="add-task" onClick={() => onNotice("New custom tasks will be available soon.")}><Plus size={15} /> Add a task</button>
+        <button className="add-task" onClick={onAddTask}><Plus size={15} /> Add a task</button>
       </article>
       <article className="panel budget-panel">
         <div className="panel-heading"><div><span className="panel-kicker">SPEND WITH INTENTION</span><h3>Budget overview</h3></div><button className="quiet-button" onClick={() => onNavigate("Budget planner")}><span>Details</span><span aria-hidden="true">↗</span></button></div>
@@ -52,6 +52,6 @@ export function OverviewView({ plan, eventCount, completed, daysUntil, formatted
         <div className="budget-note"><Sparkles size={15} /><span>Set aside <strong>{formatMoney(plan.budget.find((item) => item.category === "Contingency")?.amount ?? 0)}</strong> for the unexpected.</span></div>
       </article>
     </section>
-    <section className="bottom-note"><div className="note-spark"><Sparkles size={16} /></div><p><strong>A thoughtful touch</strong><span>{plan.request.priorities.length ? `Keep ${plan.request.priorities.join(" and ").toLowerCase()} in view as your plan takes shape.` : "Add a few priorities to make every suggestion more personal."}</span></p><button onClick={() => onNotice("Priorities are included when you create an event.")}><span>Planning note</span><span aria-hidden="true">↗</span></button></section>
+    <section className="bottom-note"><div className="note-spark"><Sparkles size={16} /></div><p><strong>A thoughtful touch</strong><span>{plan.request.priorities.length ? `Keep ${plan.request.priorities.join(" and ").toLowerCase()} in view as your plan takes shape.` : "Add a few priorities to make every suggestion more personal."}</span></p></section>
   </>;
 }

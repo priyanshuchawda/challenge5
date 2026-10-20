@@ -32,10 +32,25 @@ describe("Gemini planning provider", () => {
 
     await expect(generateEventIdeas(input)).resolves.toEqual(validIdeas);
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain("/models/gemini-3.5-flash-lite:generateContent");
+    expect(url).toContain("/models/gemini-2.5-flash-lite:generateContent");
     expect((options.headers as Record<string, string>)["x-goog-api-key"]).toBe("test-key");
     expect(String(options.body)).not.toContain("Test celebration");
     expect(String(options.body)).toContain("Step-free access");
+  });
+
+  it("treats refinement feedback and prior suggestions as untrusted data", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(validIdeas) }] } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const refinement = { ...input, refinement: "Make this more affordable", currentIdeas: validIdeas };
+
+    await expect(generateEventIdeas(refinement)).resolves.toEqual(validIdeas);
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const requestBody = JSON.parse(String(options.body)) as { systemInstruction: { parts: Array<{ text: string }> }; contents: Array<{ parts: Array<{ text: string }> }>; generationConfig: { maxOutputTokens: number } };
+    expect(requestBody.systemInstruction.parts[0]?.text).toContain("untrusted data");
+    expect(requestBody.contents[0]?.parts[0]?.text).toContain("Make this more affordable");
+    expect(requestBody.contents[0]?.parts[0]?.text).toContain(validIdeas.theme);
+    expect(requestBody.generationConfig.maxOutputTokens).toBe(1800);
   });
 
   it("fails closed when no server key is configured", async () => {

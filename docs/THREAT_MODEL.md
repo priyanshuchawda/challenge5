@@ -17,9 +17,9 @@ This review covers the current browser-only planner and the optional Gemini idea
 | --- | --- | --- |
 | API key exposed in a browser bundle or Git | Server-only environment variable; `.env*` ignored; local file permissions restricted | Deployment operators must store the key as a server secret |
 | Sensitive event information sent to the provider | User-initiated request; privacy notice; no event name or guest list; prompt context is allowlisted and revalidated | Location and priorities are still sent; avoid sensitive content and use synthetic demo data |
-| Prompt injection in user priorities | Input is JSON data, system instructions constrain the assistant, no tools or external actions are available | Models can still produce incorrect or unsuitable suggestions |
+| Prompt injection in priorities or refinement feedback | Event details, prior suggestions, and feedback are passed as untrusted JSON data; system instructions constrain the assistant; no tools or external actions are available | Models can still produce incorrect or unsuitable suggestions |
 | Malformed or unsafe model output | Structured JSON response plus Zod validation; React renders strings as text | Human review is still needed before acting on suggestions |
-| Provider usage exhaustion | 8 KiB body cap, 20 second provider timeout, 900 output-token cap, 3 requests per minute | Development limits are process-local; production requires Upstash and a trusted proxy identity header |
+| Provider usage exhaustion | 8 KiB body cap, 20 second provider timeout, 1,800 output-token cap, 3 requests per minute | Development limits are process-local; production requires Upstash and a trusted proxy identity header |
 | Tampered browser storage | Zod validates persisted plans before use; invalid data is ignored | Local storage is not encrypted and can be edited by the device owner |
 | Incorrect budget totals | Expenses use bounded positive integers; category actuals and remaining balance are computed deterministically; overspend is explicit | This is a planning aid, not accounting or tax software; deletion/edit flows for expenses are not yet available |
 | False booking implication | Vendor records are shortlists with an explicit user-controlled status | No supplier search, inventory availability, contract, or payment is integrated |

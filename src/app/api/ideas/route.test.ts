@@ -19,13 +19,13 @@ const validInput = {
   location: "Pune", priorities: ["Step-free access"],
 };
 const validIdeas = {
-  theme: "Garden gathering", overview: "A relaxed afternoon.",
+  theme: "Garden gathering", overview: "A relaxed afternoon with thoughtful details for every guest.",
   suggestions: [
-    { title: "Welcome table", detail: "Offer water.", category: "Accessibility", budgetFriendly: true },
-    { title: "Shared meal", detail: "Label dishes.", category: "Food", budgetFriendly: true },
-    { title: "Memory cards", detail: "Invite stories.", category: "Activities", budgetFriendly: true },
+    { title: "Welcome table", detail: "Offer water and a clear sign near the accessible entrance.", category: "Accessibility", budgetFriendly: true },
+    { title: "Shared meal", detail: "Label each dish and offer a simple vegetarian option.", category: "Food", budgetFriendly: true },
+    { title: "Memory cards", detail: "Invite guests to share a short birthday memory.", category: "Activities", budgetFriendly: true },
   ],
-  contingency: "Move indoors if it rains.",
+  contingency: "Move the gathering to a confirmed indoor space if the weather changes.",
 };
 
 function request(body: string, headers: Record<string, string> = {}) {
@@ -47,6 +47,20 @@ describe("POST /api/ideas", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     await expect(response.json()).resolves.toEqual({ ideas: validIdeas });
     expect(mocks.generateEventIdeas).toHaveBeenCalledWith(validInput);
+  });
+
+  it("accepts a bounded refinement with the prior structured ideas", async () => {
+    const refinementRequest = { ...validInput, refinement: "Make this more budget-friendly", currentIdeas: validIdeas };
+    const response = await POST(request(JSON.stringify(refinementRequest)));
+    expect(response.status).toBe(200);
+    expect(mocks.generateEventIdeas).toHaveBeenCalledWith(refinementRequest);
+  });
+
+  it("rejects malformed refinements before consuming an AI quota", async () => {
+    const response = await POST(request(JSON.stringify({ ...validInput, refinement: "x", currentIdeas: validIdeas })));
+    expect(response.status).toBe(400);
+    expect(mocks.checkIdeaRateLimit).not.toHaveBeenCalled();
+    expect(mocks.generateEventIdeas).not.toHaveBeenCalled();
   });
 
   it("rejects invalid context before consuming an AI quota", async () => {

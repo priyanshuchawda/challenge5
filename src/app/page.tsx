@@ -2,11 +2,11 @@
 
 import { useState, useSyncExternalStore } from "react";
 import {
-  CalendarDays, ChevronDown, CircleHelp, Flower2, LayoutDashboard, Lightbulb, Plus, Search,
-  Settings2, Sparkles, WalletCards, X, Store,
+  CalendarDays, CircleHelp, Flower2, LayoutDashboard, Lightbulb, Plus, Search,
+  Sparkles, WalletCards, X, Store,
 } from "lucide-react";
-import { addExpense, completedTaskCount, createPlan, remainingBudget, totalSpent, updateRunOfShowItem, updateVendor } from "@/features/planning/planner";
-import { eventRequestSchema, ideasResponseSchema, type EventIdeas, type RunOfShowItem, type Vendor } from "@/features/planning/schema";
+import { addExpense, addTask, completedTaskCount, createPlan, remainingBudget, totalSpent, updateRunOfShowItem, updateVendor } from "@/features/planning/planner";
+import { eventRequestSchema, ideasResponseSchema, taskDraftSchema, type EventIdeas, type RunOfShowItem, type TaskDraft, type Vendor } from "@/features/planning/schema";
 import { getPlansSnapshot, getServerPlansSnapshot, readPlans, savePlans, subscribeToPlans } from "@/features/planning/plan-store";
 import { formatDate } from "@/features/planning/format";
 import { BudgetPlannerView } from "@/features/planning/components/BudgetPlannerView";
@@ -16,6 +16,7 @@ import { OverviewView } from "@/features/planning/components/OverviewView";
 import { TimelineAndVendorsView } from "@/features/planning/components/TimelineAndVendorsView";
 import { EventFormDialog, type NewEventForm } from "@/features/planning/components/EventFormDialog";
 import { ExpenseDialog } from "@/features/planning/components/ExpenseDialog";
+import { TaskDialog } from "@/features/planning/components/TaskDialog";
 
 const demoRequest = eventRequestSchema.parse({
   name: "Maya’s garden wedding", type: "Wedding", date: "2026-12-12", guests: 96,
@@ -36,12 +37,15 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [ideas, setIdeas] = useState<EventIdeas | null>(null);
+  const [ideaRefinement, setIdeaRefinement] = useState("");
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [ideasError, setIdeasError] = useState("");
   const [expenseModal, setExpenseModal] = useState(false);
+  const [taskModal, setTaskModal] = useState(false);
   const [expenseCategory, setExpenseCategory] = useState("Venue");
   const [expenseDescription, setExpenseDescription] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
+  const [taskDraft, setTaskDraft] = useState<TaskDraft>({ title: "", dueDate: new Date().toISOString().slice(0, 10), priority: "Medium", category: "Planning" });
   const [form, setForm] = useState<NewEventForm>({
     name: "", type: "Wedding", date: "2027-06-12", guests: "80", budget: "1200000", location: "Pune, India", priorities: "Step-free access, Vegetarian menu",
   });
@@ -52,6 +56,13 @@ export default function Home() {
   const remaining = remainingBudget(activePlan.request.budget, activePlan.expenses);
   const daysUntil = Math.max(0, Math.ceil((new Date(`${activePlan.request.date}T12:00:00`).getTime() - today.getTime()) / 86_400_000));
   const formattedEventDate = formatDate(activePlan.request.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  function selectPlan(planId: string) {
+    setActiveId(planId);
+    setIdeas(null);
+    setIdeaRefinement("");
+    setIdeasError("");
+  }
 
   function changeForm(field: keyof NewEventForm, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -96,6 +107,20 @@ export default function Home() {
     }
   }
 
+  function saveTask(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed = taskDraftSchema.safeParse(taskDraft);
+    if (!parsed.success) {
+      setNotice(parsed.error.issues[0]?.message ?? "Check the task details.");
+      return;
+    }
+    const updated = addTask(activePlan, parsed.data);
+    savePlans(plans.map((plan) => plan.id === activePlan.id ? updated : plan));
+    setTaskModal(false);
+    setTaskDraft({ title: "", dueDate: new Date().toISOString().slice(0, 10), priority: "Medium", category: "Planning" });
+    setNotice("Task added to your plan.");
+  }
+
   function saveEvent(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const candidate = {
@@ -120,22 +145,25 @@ export default function Home() {
     setNotice(`${parsed.data.name} is ready to plan.`);
   }
 
-  async function askGemini() {
+  async function askGemini(refinementText?: string) {
     setIdeasLoading(true);
     setIdeasError("");
-    setIdeas(null);
+    if (!refinementText) setIdeas(null);
     try {
+      const eventContext = {
+        type: activePlan.request.type,
+        date: activePlan.request.date,
+        guests: activePlan.request.guests,
+        budget: activePlan.request.budget,
+        location: activePlan.request.location,
+        priorities: activePlan.request.priorities,
+      };
       const response = await fetch("/api/ideas", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          type: activePlan.request.type,
-          date: activePlan.request.date,
-          guests: activePlan.request.guests,
-          budget: activePlan.request.budget,
-          location: activePlan.request.location,
-          priorities: activePlan.request.priorities,
-        }),
+        body: JSON.stringify(refinementText && ideas
+          ? { ...eventContext, refinement: refinementText, currentIdeas: ideas }
+          : eventContext),
       });
       const body: unknown = await response.json();
       if (!response.ok) {
@@ -145,6 +173,7 @@ export default function Home() {
       const result = ideasResponseSchema.safeParse(body);
       if (!result.success) throw new Error("The AI returned an incomplete response. Your saved plan is unchanged.");
       setIdeas(result.data.ideas);
+      if (refinementText) setIdeaRefinement("");
     } catch (error) {
       setIdeasError(error instanceof Error ? error.message : "AI ideas are temporarily unavailable.");
     } finally {
@@ -176,11 +205,10 @@ export default function Home() {
           <div className="help-icon"><CircleHelp size={18} /></div>
           <strong>A little help?</strong>
           <p>Good celebrations start with a simple plan.</p>
-          <button onClick={() => setNotice("Your plan is saved in this browser. Start with a task, then adjust as you go.")}><span>Planning tips</span><span aria-hidden="true">↗</span></button>
         </div>
-        <button className="profile-button" onClick={() => setNotice("Your plans are stored privately in this browser for this demo.")}>
-          <span className="avatar">P</span><span className="profile-copy"><strong>Priyanshu</strong><small>Personal workspace</small></span><ChevronDown size={16} />
-        </button>
+        <div className="profile-button">
+          <span className="avatar" aria-hidden="true">P</span><span className="profile-copy"><strong>Priyanshu</strong><small>Saved in this browser</small></span>
+        </div>
       </aside>
 
       <section className="main-area" id="home">
@@ -189,9 +217,8 @@ export default function Home() {
           <div className="topbar-actions">
             <label className="search-box"><Search size={16} /><span className="sr-only">Search plans</span><input aria-label="Search plans" placeholder="Search anything" onChange={(event) => {
               const found = plans.find((plan) => plan.request.name.toLowerCase().includes(event.target.value.toLowerCase()));
-              if (found && event.target.value) setActiveId(found.id);
+              if (found && event.target.value) selectPlan(found.id);
             }} /><kbd>⌘ K</kbd></label>
-            <button className="icon-button" aria-label="Settings" onClick={() => setNotice("Settings will be available when accounts are added.")}><Settings2 size={18} /></button>
             <span className="top-avatar" aria-label="Priyanshu">P</span>
           </div>
         </header>
@@ -211,7 +238,7 @@ export default function Home() {
           {view === "My events" && <EventListView
             plans={plans}
             onCreate={() => setModalOpen(true)}
-            onOpen={(planId) => { setActiveId(planId); setView("Overview"); }}
+            onOpen={(planId) => { selectPlan(planId); setView("Overview"); }}
           />}
           {view === "Budget planner" && <BudgetPlannerView
             plan={activePlan}
@@ -231,7 +258,10 @@ export default function Home() {
             ideas={ideas}
             isLoading={ideasLoading}
             error={ideasError}
+            refinement={ideaRefinement}
+            onRefinementChange={setIdeaRefinement}
             onAskGemini={askGemini}
+            onRefine={() => void askGemini(ideaRefinement.trim())}
           />}
           {view === "Overview" && <OverviewView
             plan={activePlan}
@@ -241,7 +271,7 @@ export default function Home() {
             formattedEventDate={formattedEventDate}
             onToggleTask={toggleTask}
             onNavigate={setView}
-            onNotice={setNotice}
+            onAddTask={() => setTaskModal(true)}
           />}
           <footer className="footer"><span>Made for moments that matter <span className="heart">♥</span></span><span>GatherWise · Your plans stay on this device</span></footer>
         </div>
@@ -264,6 +294,12 @@ export default function Home() {
         onAmountChange={setExpenseAmount}
         onClose={() => setExpenseModal(false)}
         onSubmit={saveExpense}
+      />}
+      {taskModal && <TaskDialog
+        task={taskDraft}
+        onChange={(field, value) => setTaskDraft((current) => ({ ...current, [field]: value }))}
+        onClose={() => setTaskModal(false)}
+        onSubmit={saveTask}
       />}
     </main>
   );

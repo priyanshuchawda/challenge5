@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ideaRequestSchema } from "@/features/planning/schema";
+import { ideaRefinementRequestSchema, ideaRequestSchema } from "@/features/planning/schema";
 import { generateEventIdeas, GeminiError } from "@/server/ai/gemini";
 import { checkIdeaRateLimit } from "@/server/security/rate-limit";
 
@@ -24,8 +24,12 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Request must contain valid JSON." }, { status: 400 });
   }
-  const input = ideaRequestSchema.safeParse(candidate);
-  if (!input.success) return NextResponse.json({ error: "Check the event details and try again." }, { status: 400 });
+  const containsRefinement = typeof candidate === "object" && candidate !== null &&
+    ("refinement" in candidate || "currentIdeas" in candidate);
+  const initialRequest = containsRefinement
+    ? ideaRefinementRequestSchema.safeParse(candidate)
+    : ideaRequestSchema.safeParse(candidate);
+  if (!initialRequest.success) return NextResponse.json({ error: "Check the event details and try again." }, { status: 400 });
 
   const limit = await checkIdeaRateLimit(request);
   if (!limit.allowed && "unavailable" in limit) {
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const ideas = await generateEventIdeas(input.data);
+    const ideas = await generateEventIdeas(initialRequest.data);
     return NextResponse.json({ ideas }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof GeminiError && error.status === "quota") {

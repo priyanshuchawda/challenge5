@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    exclude: ["src/server/ai/gemini.live.test.ts"],
     coverage: {
       include: ["src/app/api/**/*.ts", "src/features/planning/*.ts", "src/server/**/*.ts"],
       exclude: ["**/*.test.ts"],
