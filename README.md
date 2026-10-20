@@ -7,13 +7,15 @@ GatherWise is a practical event-planning workspace for weddings, birthdays, and 
 - Create an event with its date, guest estimate, budget, location, and priorities.
 - Generate an initial budget allocation and planning checklist with deterministic domain logic.
 - Complete tasks and keep plans in browser-local storage without requiring an account.
+- Track integer-valued expenses against deterministic budget allocations, including category actuals, remaining balance, and explicit overspend warnings.
+- Manage venue, catering, and photography vendor checklists through researching, contacted, quoted, and booked states; changes persist in the browser.
 - Request tailored inspiration from Gemini 3.5 Flash-Lite through a server-only, structured-output API route, with Gemini 3.8 Flash as a bounded transient-error fallback.
 - Keep AI calls bounded by input size, output tokens, request time, and a three-request-per-minute limit.
 - Validate event input and persisted plans with Zod.
 - Run type checking, lint, domain tests, and a production build locally. GitHub Actions are disabled for this project.
 - Use the demo without a third-party key or paid service.
 
-The current storage is local to one browser. It is suitable for the demo, not shared or multi-device persistence. Vendor prices and availability are estimates and are never presented as confirmed bookings.
+The current storage is local to one browser. It is suitable for the demo, not shared or multi-device persistence. Vendor prices and availability are estimates and are never presented as confirmed bookings. Existing saved plans are upgraded with empty expense/vendor records when loaded.
 
 ## Requirements
 
@@ -41,7 +43,7 @@ pnpm lint
 pnpm build
 ```
 
-The tests cover schema rejection, integer budget reconciliation, schedule generation, task completion, request validation, usage limits, model output validation, transient fallback behavior, and safe provider failures. Tests mock Gemini and do not consume API quota.
+The tests cover schema rejection and migration, integer budget reconciliation, overspend detection, schedule generation, task completion, vendor status updates, request validation, usage limits, model output validation, transient fallback behavior, and safe provider failures. Tests mock Gemini and do not consume API quota.
 
 ## Architecture
 
@@ -77,11 +79,11 @@ The app is a small modular monolith. UI components collect and present data, dom
 | Efficiency | Deterministic local planning, input/output bounds, one bounded provider request, no network dependency for the core flow |
 | Testing | Unit tests for budget, scheduling, validation, progress, Gemini output, provider fallback, and API failures; locally run quality gates |
 | Accessibility | Labeled inputs, keyboard-operable controls, focus styles, reduced-motion support, status announcements |
-| Problem alignment | Event context, budgets, timelines, vendor checklist tasks, and personalized priorities |
+| Problem alignment | Event context, editable expense tracking, overspend detection, task timelines, vendor status pipeline, and personalized AI ideas |
 
 ## Roadmap
 
-1. Expand task and expense editing, then add export.
+1. Add printable and CSV plan export, then richer schedule editing.
 2. Add persistence/authentication only if the challenge requires multi-device accounts; enforce ownership and row-level security if a database is introduced.
 3. Add repeatable browser end-to-end and accessibility checks to CI for the complete user journey.
 

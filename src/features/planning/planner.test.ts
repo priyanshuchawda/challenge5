@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allocateBudget, budgetTotal, completedTaskCount, createPlan } from "./planner";
+import { addExpense, allocateBudget, budgetTotal, completedTaskCount, createPlan, remainingBudget, totalSpent, updateVendor } from "./planner";
 import { eventRequestSchema } from "./schema";
 
 const request = eventRequestSchema.parse({
@@ -32,5 +32,28 @@ describe("planning domain", () => {
   it("counts task completion deterministically", () => {
     const plan = createPlan(request, "test-event");
     expect(completedTaskCount(plan.tasks.map((task, index) => ({ ...task, completed: index < 2 })))).toBe(2);
+  });
+
+  it("tracks actual expenses with integer totals and detects overspend", () => {
+    const plan = createPlan(request, "expense-event");
+    const category = plan.budget[0]?.category ?? "Venue";
+    const updated = addExpense(plan, { category, description: "Venue deposit", amount: 250_001, date: "2026-10-20" }, "expense-1");
+    expect(updated.budget[0]?.spent).toBe(250_001);
+    expect(totalSpent(updated.expenses)).toBe(250_001);
+    expect(remainingBudget(1200000, updated.expenses)).toBe(949_999);
+    expect(remainingBudget(200000, updated.expenses)).toBeLessThan(0);
+    const overspent = addExpense(updated, { category, description: "Final venue payment", amount: 1_100_000, date: "2026-10-20" }, "expense-2");
+    expect(remainingBudget(1200000, overspent.expenses)).toBeLessThan(0);
+    expect(overspent.budget[0]?.spent).toBe(1_350_001);
+    expect(plan.expenses).toHaveLength(0);
+  });
+
+  it("rejects invalid expense categories and updates vendor workflow statuses", () => {
+    const plan = createPlan(request, "vendor-event");
+    expect(() => addExpense(plan, { category: "Unknown", description: "Deposit", amount: 500, date: "2026-10-20" })).toThrow("valid budget category");
+    const venue = plan.vendors[0];
+    if (!venue) throw new Error("Expected the default venue checklist item.");
+    const updated = updateVendor(plan, venue.id, { status: "Booked", estimatedCost: 300_000 });
+    expect(updated.vendors[0]).toMatchObject({ status: "Booked", estimatedCost: 300_000 });
   });
 });

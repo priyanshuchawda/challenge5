@@ -13,6 +13,20 @@ describe("local plan storage boundary", () => {
     expect(readPlans(JSON.stringify([plan]))).toEqual([plan]);
   });
 
+  it("migrates previously saved plans with no expense or vendor fields", () => {
+    const legacy = structuredClone(plan) as Record<string, unknown>;
+    delete legacy.expenses;
+    delete legacy.vendors;
+    legacy.budget = (legacy.budget as Array<Record<string, unknown>>).map((allocation) => {
+      const previous = { ...allocation };
+      delete previous.spent;
+      return previous;
+    });
+    const migrated = readPlans(JSON.stringify([legacy]));
+    expect(migrated[0]).toMatchObject({ expenses: [], vendors: [] });
+    expect(migrated[0]?.budget.every((item) => item.spent === 0)).toBe(true);
+  });
+
   it("rejects malformed or invalid local data without throwing", () => {
     expect(readPlans("not-json")).toEqual([]);
     expect(readPlans(JSON.stringify([{ ...plan, budget: [{ amount: -2 }] }]))).toEqual([]);

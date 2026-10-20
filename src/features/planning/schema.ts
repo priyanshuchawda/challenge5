@@ -25,13 +25,35 @@ export type BudgetAllocation = {
   category: string;
   amount: number;
   color: string;
+  spent: number;
 };
+
+export const expenseSchema = z.object({
+  id: z.string().min(1).max(120),
+  category: z.string().trim().min(1).max(80),
+  description: z.string().trim().min(2).max(120),
+  amount: z.number().int().positive().max(1_000_000_000),
+  date: z.iso.date(),
+});
+export type Expense = z.infer<typeof expenseSchema>;
+
+export const vendorSchema = z.object({
+  id: z.string().min(1).max(120),
+  name: z.string().trim().min(2).max(100),
+  category: z.string().trim().min(2).max(80),
+  status: z.enum(["Researching", "Contacted", "Quoted", "Booked"]),
+  estimatedCost: z.number().int().nonnegative().max(1_000_000_000),
+  notes: z.string().max(300),
+});
+export type Vendor = z.infer<typeof vendorSchema>;
 
 export type EventPlan = {
   id: string;
   request: EventRequest;
   tasks: PlanTask[];
   budget: BudgetAllocation[];
+  expenses: Expense[];
+  vendors: Vendor[];
   createdAt: string;
 };
 
@@ -50,7 +72,10 @@ export const planSchema = z.object({
     category: z.string().min(1).max(80),
     amount: z.number().int().nonnegative(),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    spent: z.number().int().nonnegative().default(0),
   })).max(20),
+  expenses: z.array(expenseSchema).max(500).default([]),
+  vendors: z.array(vendorSchema).max(100).default([]),
   createdAt: z.iso.datetime(),
 });
 

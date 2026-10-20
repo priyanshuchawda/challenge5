@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   ArrowDownRight, ArrowUpRight, CalendarDays, Check, ChevronDown, CircleHelp,
   Clock3, Flower2, LayoutDashboard, Lightbulb, MapPin, Plus, Search,
-  Settings2, Sparkles, UsersRound, WalletCards, X,
+  Settings2, Sparkles, UsersRound, WalletCards, X, Store, ReceiptText,
 } from "lucide-react";
-import { completedTaskCount, createPlan } from "@/features/planning/planner";
+import { addExpense, completedTaskCount, createPlan, remainingBudget, totalSpent, updateVendor } from "@/features/planning/planner";
 import { eventRequestSchema, ideasResponseSchema, type EventIdeas, type EventRequest } from "@/features/planning/schema";
 import { getPlansSnapshot, getServerPlansSnapshot, readPlans, savePlans, subscribeToPlans } from "@/features/planning/plan-store";
 
@@ -41,6 +41,10 @@ export default function Home() {
   const [ideas, setIdeas] = useState<EventIdeas | null>(null);
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [ideasError, setIdeasError] = useState("");
+  const [expenseModal, setExpenseModal] = useState(false);
+  const [expenseCategory, setExpenseCategory] = useState("Venue");
+  const [expenseDescription, setExpenseDescription] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
   const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -57,6 +61,8 @@ export default function Home() {
 
   const activePlan = plans.find((plan) => plan.id === activeId) ?? plans[0] ?? demoPlan;
   const completed = completedTaskCount(activePlan.tasks);
+  const spent = totalSpent(activePlan.expenses);
+  const remaining = remainingBudget(activePlan.request.budget, activePlan.expenses);
   const daysUntil = Math.max(0, Math.ceil((new Date(`${activePlan.request.date}T12:00:00`).getTime() - today.getTime()) / 86_400_000));
   const formattedEventDate = dateLabel(activePlan.request.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
@@ -65,6 +71,29 @@ export default function Home() {
       ...plan, tasks: plan.tasks.map((task) => task.id === taskId ? { ...task, completed: !task.completed } : task),
     });
     savePlans(updated);
+  }
+
+  function changeVendorStatus(vendorId: string, status: "Researching" | "Contacted" | "Quoted" | "Booked") {
+    savePlans(plans.map((plan) => plan.id === activePlan.id ? updateVendor(plan, vendorId, { status }) : plan));
+  }
+
+  function saveExpense(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      const updated = addExpense(activePlan, {
+        category: expenseCategory,
+        description: expenseDescription,
+        amount: Number(expenseAmount),
+        date: new Date().toISOString().slice(0, 10),
+      });
+      savePlans(plans.map((plan) => plan.id === activePlan.id ? updated : plan));
+      setExpenseModal(false);
+      setExpenseDescription("");
+      setExpenseAmount("");
+      setNotice("Expense added. Budget totals are up to date.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Check the expense details.");
+    }
   }
 
   function saveEvent(event: React.FormEvent<HTMLFormElement>) {
@@ -134,7 +163,7 @@ export default function Home() {
         <nav className="main-nav">
           {[
             { label: "Overview", icon: LayoutDashboard }, { label: "My events", icon: CalendarDays },
-            { label: "Budget planner", icon: WalletCards }, { label: "Inspiration", icon: Lightbulb },
+            { label: "Budget planner", icon: WalletCards }, { label: "Timeline & vendors", icon: Store }, { label: "Inspiration", icon: Lightbulb },
           ].map(({ label, icon: Icon }) => (
             <button key={label} aria-label={label} title={label} className={`nav-link ${view === label ? "active" : ""}`} onClick={() => setView(label)}>
               <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
@@ -187,9 +216,17 @@ export default function Home() {
           </section> : view === "Budget planner" ? <section className="panel detail-page">
             <div className="panel-heading"><div><span className="panel-kicker">PLAN WITHIN YOUR LIMIT</span><h3>{activePlan.request.name} budget</h3></div><span className="detail-total">{money(activePlan.request.budget)}</span></div>
             <p className="detail-intro">A starting allocation based on your total budget. These are planning estimates; confirm actual prices with vendors.</p>
-            <div className="budget-detail-list">{activePlan.budget.map((item) => <div className="budget-detail-row" key={item.category}><span className="legend-dot" style={{ background: item.color }} /><strong>{item.category}</strong><div className="budget-detail-track"><span style={{ width: `${item.amount / activePlan.request.budget * 100}%`, background: item.color }} /></div><b>{money(item.amount)}</b><small>{Math.round(item.amount / activePlan.request.budget * 100)}%</small></div>)}</div>
-            <div className="budget-detail-total"><span>Allocated budget</span><strong>{money(activePlan.budget.reduce((sum, item) => sum + item.amount, 0))}</strong></div>
+            <div className={`budget-summary ${remaining < 0 ? "budget-over" : ""}`}><div><span>Total budget</span><strong>{money(activePlan.request.budget)}</strong></div><div><span>Recorded expenses</span><strong>{money(spent)}</strong></div><div><span>{remaining < 0 ? "Over budget" : "Remaining"}</span><strong>{money(Math.abs(remaining))}</strong></div></div>
+            {remaining < 0 && <div className="budget-alert" role="alert"><CircleHelp size={15} /><span>Recorded spending is {money(Math.abs(remaining))} over this event’s total budget. Review the estimates before adding commitments.</span></div>}
+            <div className="panel-heading expense-heading"><div><span className="panel-kicker">ALLOCATIONS AND ACTUALS</span><h3>Budget categories</h3></div><button className="primary-button" onClick={() => { setExpenseCategory(activePlan.budget[0]?.category ?? "Venue"); setExpenseModal(true); }}><Plus size={15} /> Add expense</button></div>
+            <div className="budget-detail-list">{activePlan.budget.map((item) => <div className="budget-detail-row" key={item.category}><span className="legend-dot" style={{ background: item.color }} /><strong>{item.category}</strong><div className="budget-detail-track"><span style={{ width: `${Math.min(100, item.amount ? item.spent / item.amount * 100 : 0)}%`, background: item.spent > item.amount ? "#b8544b" : item.color }} /></div><b>{money(item.spent)} / {money(item.amount)}</b><small>{item.amount ? Math.round(item.spent / item.amount * 100) : 0}%</small></div>)}</div>
+            <div className="expense-table-wrap"><table className="expense-table"><caption>Recorded expenses</caption><thead><tr><th scope="col">Description</th><th scope="col">Category</th><th scope="col">Date</th><th scope="col">Amount</th></tr></thead><tbody>{activePlan.expenses.length ? activePlan.expenses.map((expense) => <tr key={expense.id}><td>{expense.description}</td><td>{expense.category}</td><td>{dateLabel(expense.date, { day: "numeric", month: "short", year: "numeric" })}</td><td>{money(expense.amount)}</td></tr>) : <tr><td colSpan={4}>No expenses yet. Add a receipt or deposit to track actual spending.</td></tr>}</tbody></table></div>
             <div className="budget-note"><Sparkles size={15} /><span>Keep your <strong>{activePlan.request.priorities.join(", ") || "event priorities"}</strong> in mind when adjusting these estimates.</span></div>
+          </section> : view === "Timeline & vendors" ? <section className="detail-page">
+            <div className="panel-heading"><div><span className="panel-kicker">FROM FIRST STEP TO EVENT DAY</span><h3>Timeline & vendor checklist</h3></div><span className="detail-total">{completed}/{activePlan.tasks.length} tasks done</span></div>
+            <p className="detail-intro">Track the work and vendor conversations together. Deadlines and budget allocations are generated from your event details; bookings remain yours to confirm.</p>
+            <div className="timeline-vendor-grid"><section className="workflow-section" aria-labelledby="timeline-title"><h4 id="timeline-title"><CalendarDays size={16} /> Planning timeline</h4><div className="timeline-list">{activePlan.tasks.map((task) => <label className={`timeline-task ${task.completed ? "task-done" : ""}`} key={task.id}><input type="checkbox" checked={task.completed} onChange={() => toggleTask(task.id)} aria-label={`${task.completed ? "Mark incomplete" : "Complete"}: ${task.title}`} /><span className="timeline-marker"><Check size={12} /></span><span className="timeline-copy"><strong>{task.title}</strong><small>{task.category} · {task.priority} priority</small></span><time dateTime={task.dueDate}>{dateLabel(task.dueDate, { day: "numeric", month: "short", year: "numeric" })}</time></label>)}</div></section>
+              <section className="workflow-section" aria-labelledby="vendor-title"><h4 id="vendor-title"><Store size={16} /> Vendor pipeline <span>{activePlan.vendors.filter((vendor) => vendor.status === "Booked").length}/{activePlan.vendors.length} booked</span></h4><div className="vendor-list">{activePlan.vendors.map((vendor) => <article className="vendor-card" key={vendor.id}><div className="vendor-card-heading"><div><span className="panel-kicker">{vendor.category.toUpperCase()}</span><h5>{vendor.name}</h5></div><strong>{money(vendor.estimatedCost)}</strong></div><p>{vendor.notes}</p><label className="vendor-status-label">Status<select aria-label={`${vendor.category} vendor status`} value={vendor.status} onChange={(event) => changeVendorStatus(vendor.id, event.target.value as "Researching" | "Contacted" | "Quoted" | "Booked")}><option>Researching</option><option>Contacted</option><option>Quoted</option><option>Booked</option></select></label></article>)}</div></section></div>
           </section> : view === "Inspiration" ? <section className="detail-page">
             <div className="panel-heading"><div><span className="panel-kicker">SMALL DETAILS, BIG FEELING</span><h3>Ideas for your {activePlan.request.type.toLowerCase()}</h3></div><button className="primary-button" onClick={askGemini} disabled={ideasLoading}><Sparkles size={15} /> {ideasLoading ? "Thinking…" : "Ask Gemini"}</button></div>
             <p className="detail-intro">A few starting points shaped around {activePlan.request.guests} guests in {activePlan.request.location}. Use what fits and leave what doesn’t.</p>
@@ -271,6 +308,7 @@ export default function Home() {
         </form>
         <p className="privacy-note">Your event details stay in this browser. No account required.</p>
       </section></div>}
+      {expenseModal && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setExpenseModal(false); }}><section className="event-modal expense-modal" role="dialog" aria-modal="true" aria-labelledby="expense-title"><div className="modal-heading"><div><span className="panel-kicker">KEEP THE NUMBERS HONEST</span><h2 id="expense-title">Record an expense</h2></div><button className="icon-button" aria-label="Close expense dialog" onClick={() => setExpenseModal(false)}><X size={19} /></button></div><p className="modal-subtitle">Amounts are stored as whole INR values and reconciled locally against this event budget.</p><form className="event-form" onSubmit={saveExpense}><label>Description<input required minLength={2} maxLength={120} value={expenseDescription} onChange={(event) => setExpenseDescription(event.target.value)} placeholder="e.g. Venue deposit" /></label><label>Budget category<select value={expenseCategory} onChange={(event) => setExpenseCategory(event.target.value)}>{activePlan.budget.map((item) => <option key={item.category}>{item.category}</option>)}</select></label><label>Amount (INR)<input required type="number" min="1" max="1000000000" step="1" value={expenseAmount} onChange={(event) => setExpenseAmount(event.target.value)} placeholder="25000" /></label><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setExpenseModal(false)}>Cancel</button><button type="submit" className="primary-button"><ReceiptText size={15} /> Save expense</button></div></form></section></div>}
     </main>
   );
 }
