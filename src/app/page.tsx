@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   ArrowDownRight, ArrowUpRight, CalendarDays, Check, ChevronDown, CircleHelp,
   Clock3, Flower2, LayoutDashboard, Lightbulb, MapPin, Plus, Search,
-  Settings2, Sparkles, UsersRound, WalletCards, X, Store, ReceiptText,
+  Settings2, Sparkles, UsersRound, WalletCards, X, Store, ReceiptText, Printer, Download,
 } from "lucide-react";
-import { addExpense, completedTaskCount, createPlan, remainingBudget, totalSpent, updateVendor } from "@/features/planning/planner";
+import { addExpense, completedTaskCount, createPlan, remainingBudget, totalSpent, updateRunOfShowItem, updateVendor } from "@/features/planning/planner";
 import { eventRequestSchema, ideasResponseSchema, type EventIdeas, type EventRequest } from "@/features/planning/schema";
 import { getPlansSnapshot, getServerPlansSnapshot, readPlans, savePlans, subscribeToPlans } from "@/features/planning/plan-store";
 
@@ -75,6 +75,26 @@ export default function Home() {
 
   function changeVendorStatus(vendorId: string, status: "Researching" | "Contacted" | "Quoted" | "Booked") {
     savePlans(plans.map((plan) => plan.id === activePlan.id ? updateVendor(plan, vendorId, { status }) : plan));
+  }
+
+  function exportTasksCsv() {
+    const rows = [["time", "activity", "lead", "location", "notes"], ...activePlan.runOfShow.map((item) => [item.time, item.activity, item.lead, item.location, item.notes])];
+    const csv = rows.map((row) => row.map((value) => `"${value.replaceAll('"', '""')}"`).join(",")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${activePlan.request.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "event"}-run-of-show.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function changeScheduleItem(itemId: string, field: "time" | "activity" | "lead" | "location" | "notes", value: string) {
+    try {
+      const updated = updateRunOfShowItem(activePlan, itemId, { [field]: value });
+      savePlans(plans.map((plan) => plan.id === activePlan.id ? updated : plan));
+    } catch {
+      setNotice("That schedule change is invalid. Check the time and text length.");
+    }
   }
 
   function saveExpense(event: React.FormEvent<HTMLFormElement>) {
@@ -165,9 +185,9 @@ export default function Home() {
             { label: "Overview", icon: LayoutDashboard }, { label: "My events", icon: CalendarDays },
             { label: "Budget planner", icon: WalletCards }, { label: "Timeline & vendors", icon: Store }, { label: "Inspiration", icon: Lightbulb },
           ].map(({ label, icon: Icon }) => (
-            <button key={label} aria-label={label} title={label} className={`nav-link ${view === label ? "active" : ""}`} onClick={() => setView(label)}>
-              <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
-              {label === "My events" && <span className="nav-count">{plans.length}</span>}
+            <button key={label} title={label} className={`nav-link ${view === label ? "active" : ""}`} onClick={() => setView(label)}>
+              <Icon size={17} strokeWidth={1.8} aria-hidden="true" /><span>{label}</span>
+              {label === "My events" && <span className="nav-count" aria-hidden="true">{plans.length}</span>}
             </button>
           ))}
         </nav>
@@ -176,7 +196,7 @@ export default function Home() {
           <div className="help-icon"><CircleHelp size={18} /></div>
           <strong>A little help?</strong>
           <p>Good celebrations start with a simple plan.</p>
-          <button onClick={() => setNotice("Your plan is saved in this browser. Start with a task, then adjust as you go.")}>Planning tips <span>↗</span></button>
+          <button onClick={() => setNotice("Your plan is saved in this browser. Start with a task, then adjust as you go.")}><span>Planning tips</span><span aria-hidden="true">↗</span></button>
         </div>
         <button className="profile-button" onClick={() => setNotice("Your plans are stored privately in this browser for this demo.")}>
           <span className="avatar">P</span><span className="profile-copy"><strong>Priyanshu</strong><small>Personal workspace</small></span><ChevronDown size={16} />
@@ -214,26 +234,27 @@ export default function Home() {
               <div className="event-list-icon"><Flower2 size={19} /></div><div className="event-list-copy"><strong>{plan.request.name}</strong><span>{plan.request.type} · {dateLabel(plan.request.date, { day: "numeric", month: "long", year: "numeric" })} · {plan.request.location}</span></div><span className="event-list-budget">{money(plan.request.budget)}</span><button className="secondary-button" onClick={() => { setActiveId(plan.id); setView("Overview"); }}>Open event</button>
             </article>)}</div>
           </section> : view === "Budget planner" ? <section className="panel detail-page">
-            <div className="panel-heading"><div><span className="panel-kicker">PLAN WITHIN YOUR LIMIT</span><h3>{activePlan.request.name} budget</h3></div><span className="detail-total">{money(activePlan.request.budget)}</span></div>
+            <div className="panel-heading"><div><span className="panel-kicker">PLAN WITHIN YOUR LIMIT</span><h2 className="panel-title">{activePlan.request.name} budget</h2></div><span className="detail-total">{money(activePlan.request.budget)}</span></div>
             <p className="detail-intro">A starting allocation based on your total budget. These are planning estimates; confirm actual prices with vendors.</p>
             <div className={`budget-summary ${remaining < 0 ? "budget-over" : ""}`}><div><span>Total budget</span><strong>{money(activePlan.request.budget)}</strong></div><div><span>Recorded expenses</span><strong>{money(spent)}</strong></div><div><span>{remaining < 0 ? "Over budget" : "Remaining"}</span><strong>{money(Math.abs(remaining))}</strong></div></div>
             {remaining < 0 && <div className="budget-alert" role="alert"><CircleHelp size={15} /><span>Recorded spending is {money(Math.abs(remaining))} over this event’s total budget. Review the estimates before adding commitments.</span></div>}
             <div className="panel-heading expense-heading"><div><span className="panel-kicker">ALLOCATIONS AND ACTUALS</span><h3>Budget categories</h3></div><button className="primary-button" onClick={() => { setExpenseCategory(activePlan.budget[0]?.category ?? "Venue"); setExpenseModal(true); }}><Plus size={15} /> Add expense</button></div>
             <div className="budget-detail-list">{activePlan.budget.map((item) => <div className="budget-detail-row" key={item.category}><span className="legend-dot" style={{ background: item.color }} /><strong>{item.category}</strong><div className="budget-detail-track"><span style={{ width: `${Math.min(100, item.amount ? item.spent / item.amount * 100 : 0)}%`, background: item.spent > item.amount ? "#b8544b" : item.color }} /></div><b>{money(item.spent)} / {money(item.amount)}</b><small>{item.amount ? Math.round(item.spent / item.amount * 100) : 0}%</small></div>)}</div>
-            <div className="expense-table-wrap"><table className="expense-table"><caption>Recorded expenses</caption><thead><tr><th scope="col">Description</th><th scope="col">Category</th><th scope="col">Date</th><th scope="col">Amount</th></tr></thead><tbody>{activePlan.expenses.length ? activePlan.expenses.map((expense) => <tr key={expense.id}><td>{expense.description}</td><td>{expense.category}</td><td>{dateLabel(expense.date, { day: "numeric", month: "short", year: "numeric" })}</td><td>{money(expense.amount)}</td></tr>) : <tr><td colSpan={4}>No expenses yet. Add a receipt or deposit to track actual spending.</td></tr>}</tbody></table></div>
+            <div className="expense-table-wrap" tabIndex={0} aria-label="Recorded expenses table; scroll horizontally for all columns"><table className="expense-table"><caption>Recorded expenses</caption><thead><tr><th scope="col">Description</th><th scope="col">Category</th><th scope="col">Date</th><th scope="col">Amount</th></tr></thead><tbody>{activePlan.expenses.length ? activePlan.expenses.map((expense) => <tr key={expense.id}><td>{expense.description}</td><td>{expense.category}</td><td>{dateLabel(expense.date, { day: "numeric", month: "short", year: "numeric" })}</td><td>{money(expense.amount)}</td></tr>) : <tr><td colSpan={4}>No expenses yet. Add a receipt or deposit to track actual spending.</td></tr>}</tbody></table></div>
             <div className="budget-note"><Sparkles size={15} /><span>Keep your <strong>{activePlan.request.priorities.join(", ") || "event priorities"}</strong> in mind when adjusting these estimates.</span></div>
           </section> : view === "Timeline & vendors" ? <section className="detail-page">
-            <div className="panel-heading"><div><span className="panel-kicker">FROM FIRST STEP TO EVENT DAY</span><h3>Timeline & vendor checklist</h3></div><span className="detail-total">{completed}/{activePlan.tasks.length} tasks done</span></div>
+            <div className="panel-heading"><div><span className="panel-kicker">FROM FIRST STEP TO EVENT DAY</span><h2 className="panel-title">Timeline & vendor checklist</h2></div><span className="detail-total">{completed}/{activePlan.tasks.length} tasks done</span></div>
             <p className="detail-intro">Track the work and vendor conversations together. Deadlines and budget allocations are generated from your event details; bookings remain yours to confirm.</p>
+            <section className="run-of-show-section" aria-labelledby="run-of-show-title"><div className="panel-heading run-of-show-heading"><div><span className="panel-kicker">THE EVENT DAY</span><h3 id="run-of-show-title">Run of show</h3><p className="schedule-caption">A starter schedule, editable for your event. Confirm final timings with your team.</p></div><div className="export-actions"><button className="secondary-button" onClick={() => window.print()}><Printer size={14} /> Print plan</button><button className="secondary-button" onClick={exportTasksCsv}><Download size={14} /> Export CSV</button></div></div><div className="run-of-show-table-wrap"><table className="run-of-show-table"><caption className="sr-only">Editable event-day run of show</caption><thead><tr><th scope="col">Time</th><th scope="col">Activity</th><th scope="col">Lead</th><th scope="col">Location</th><th scope="col">Notes</th></tr></thead><tbody>{activePlan.runOfShow.map((item) => <tr key={item.id}><td><label className="sr-only" htmlFor={`${item.id}-time`}>Time for {item.activity}</label><input id={`${item.id}-time`} type="time" value={item.time} onChange={(event) => changeScheduleItem(item.id, "time", event.target.value)} /></td><td><label className="sr-only" htmlFor={`${item.id}-activity`}>Activity</label><input id={`${item.id}-activity`} maxLength={120} value={item.activity} onChange={(event) => changeScheduleItem(item.id, "activity", event.target.value)} /></td><td><label className="sr-only" htmlFor={`${item.id}-lead`}>Lead</label><input id={`${item.id}-lead`} maxLength={80} value={item.lead} onChange={(event) => changeScheduleItem(item.id, "lead", event.target.value)} /></td><td><label className="sr-only" htmlFor={`${item.id}-location`}>Location</label><input id={`${item.id}-location`} maxLength={100} value={item.location} onChange={(event) => changeScheduleItem(item.id, "location", event.target.value)} /></td><td><label className="sr-only" htmlFor={`${item.id}-notes`}>Notes</label><input id={`${item.id}-notes`} maxLength={240} value={item.notes} onChange={(event) => changeScheduleItem(item.id, "notes", event.target.value)} /></td></tr>)}</tbody></table></div></section>
             <div className="timeline-vendor-grid"><section className="workflow-section" aria-labelledby="timeline-title"><h4 id="timeline-title"><CalendarDays size={16} /> Planning timeline</h4><div className="timeline-list">{activePlan.tasks.map((task) => <label className={`timeline-task ${task.completed ? "task-done" : ""}`} key={task.id}><input type="checkbox" checked={task.completed} onChange={() => toggleTask(task.id)} aria-label={`${task.completed ? "Mark incomplete" : "Complete"}: ${task.title}`} /><span className="timeline-marker"><Check size={12} /></span><span className="timeline-copy"><strong>{task.title}</strong><small>{task.category} · {task.priority} priority</small></span><time dateTime={task.dueDate}>{dateLabel(task.dueDate, { day: "numeric", month: "short", year: "numeric" })}</time></label>)}</div></section>
               <section className="workflow-section" aria-labelledby="vendor-title"><h4 id="vendor-title"><Store size={16} /> Vendor pipeline <span>{activePlan.vendors.filter((vendor) => vendor.status === "Booked").length}/{activePlan.vendors.length} booked</span></h4><div className="vendor-list">{activePlan.vendors.map((vendor) => <article className="vendor-card" key={vendor.id}><div className="vendor-card-heading"><div><span className="panel-kicker">{vendor.category.toUpperCase()}</span><h5>{vendor.name}</h5></div><strong>{money(vendor.estimatedCost)}</strong></div><p>{vendor.notes}</p><label className="vendor-status-label">Status<select aria-label={`${vendor.category} vendor status`} value={vendor.status} onChange={(event) => changeVendorStatus(vendor.id, event.target.value as "Researching" | "Contacted" | "Quoted" | "Booked")}><option>Researching</option><option>Contacted</option><option>Quoted</option><option>Booked</option></select></label></article>)}</div></section></div>
           </section> : view === "Inspiration" ? <section className="detail-page">
-            <div className="panel-heading"><div><span className="panel-kicker">SMALL DETAILS, BIG FEELING</span><h3>Ideas for your {activePlan.request.type.toLowerCase()}</h3></div><button className="primary-button" onClick={askGemini} disabled={ideasLoading}><Sparkles size={15} /> {ideasLoading ? "Thinking…" : "Ask Gemini"}</button></div>
+            <div className="panel-heading"><div><span className="panel-kicker">SMALL DETAILS, BIG FEELING</span><h2 className="panel-title">Ideas for your {activePlan.request.type.toLowerCase()}</h2></div><button className="primary-button" onClick={askGemini} disabled={ideasLoading}><Sparkles size={15} /> {ideasLoading ? "Thinking…" : "Ask Gemini"}</button></div>
             <p className="detail-intro">A few starting points shaped around {activePlan.request.guests} guests in {activePlan.request.location}. Use what fits and leave what doesn’t.</p>
             <p className="ai-privacy">Choosing Ask Gemini sends the event type, date, guest estimate, budget, location, and priorities to Google. Don’t include personal or sensitive details in your priorities. On the free API tier, prompts may be used to improve Google products. <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noreferrer">Review Google’s terms</a>.</p>
             {ideasError && <div className="notice" role="alert"><span>{ideasError}</span></div>}
-            {ideas && <section className="ai-result" aria-live="polite"><span className="panel-kicker">GEMINI IDEA SET</span><h4>{ideas.theme}</h4><p className="ai-overview">{ideas.overview}</p><div className="ideas-grid">{ideas.suggestions.map((idea) => <article className="idea-card" key={`${idea.category}-${idea.title}`}><span className="panel-kicker">{idea.category.toUpperCase()}{idea.budgetFriendly ? " · BUDGET CONSCIOUS" : ""}</span><h4>{idea.title}</h4><p>{idea.detail}</p></article>)}</div><div className="budget-note"><Sparkles size={15} /><span><strong>Contingency idea:</strong> {ideas.contingency} · Suggestions are estimates, not verified bookings or vendor prices.</span></div></section>}
-            <div className="ideas-grid"><article className="idea-card"><span className="idea-icon idea-green"><Flower2 size={18} /></span><span className="panel-kicker">A WARM WELCOME</span><h4>Make arrival feel easy</h4><p>Set aside a clearly marked welcome area with seating, water, and a simple way to find the event space.</p></article><article className="idea-card"><span className="idea-icon idea-peach"><UsersRound size={18} /></span><span className="panel-kicker">THOUGHTFUL HOSTING</span><h4>Plan for different needs</h4><p>{activePlan.request.priorities.length ? `Keep ${activePlan.request.priorities.join(" and ").toLowerCase()} visible in vendor conversations and the day-of checklist.` : "Ask guests about access and dietary needs early, then include confirmed arrangements in the run of show."}</p></article><article className="idea-card"><span className="idea-icon idea-lilac"><Lightbulb size={18} /></span><span className="panel-kicker">A MOMENT TO REMEMBER</span><h4>Give the gathering a ritual</h4><p>Invite guests to share a short story, add a note to a memory table, or help choose a song for one shared moment.</p></article></div>
+            {ideas && <section className="ai-result" aria-live="polite"><span className="panel-kicker">GEMINI IDEA SET</span><h3>{ideas.theme}</h3><p className="ai-overview">{ideas.overview}</p><div className="ideas-grid">{ideas.suggestions.map((idea) => <article className="idea-card" key={`${idea.category}-${idea.title}`}><span className="panel-kicker">{idea.category.toUpperCase()}{idea.budgetFriendly ? " · BUDGET CONSCIOUS" : ""}</span><h4>{idea.title}</h4><p>{idea.detail}</p></article>)}</div><div className="budget-note"><Sparkles size={15} /><span><strong>Contingency idea:</strong> {ideas.contingency} · Suggestions are estimates, not verified bookings or vendor prices.</span></div></section>}
+            <div className="ideas-grid"><article className="idea-card"><span className="idea-icon idea-green"><Flower2 size={18} /></span><span className="panel-kicker">A WARM WELCOME</span><h3>Make arrival feel easy</h3><p>Set aside a clearly marked welcome area with seating, water, and a simple way to find the event space.</p></article><article className="idea-card"><span className="idea-icon idea-peach"><UsersRound size={18} /></span><span className="panel-kicker">THOUGHTFUL HOSTING</span><h3>Plan for different needs</h3><p>{activePlan.request.priorities.length ? `Keep ${activePlan.request.priorities.join(" and ").toLowerCase()} visible in vendor conversations and the day-of checklist.` : "Ask guests about access and dietary needs early, then include confirmed arrangements in the run of show."}</p></article><article className="idea-card"><span className="idea-icon idea-lilac"><Lightbulb size={18} /></span><span className="panel-kicker">A MOMENT TO REMEMBER</span><h3>Give the gathering a ritual</h3><p>Invite guests to share a short story, add a note to a memory table, or help choose a song for one shared moment.</p></article></div>
             <p className="idea-disclaimer">These are general planning prompts, not vendor recommendations or verified availability.</p>
           </section> : <>
           <section className="event-banner" aria-label="Selected upcoming event">
@@ -247,7 +268,7 @@ export default function Home() {
                 <div className="countdown"><span>{daysUntil}</span><small>days to go</small></div>
               </div>
             </div>
-            <div className="banner-side"><span className="side-label">YOUR PROGRESS</span><div className="progress-ring" style={{ "--progress": `${activePlan.tasks.length ? Math.round(completed / activePlan.tasks.length * 100) : 0}%` } as React.CSSProperties}><div><strong>{activePlan.tasks.length ? Math.round(completed / activePlan.tasks.length * 100) : 0}%</strong><small>ready</small></div></div><button className="text-button" onClick={() => setView("My events")}>View event <span>↗</span></button></div>
+            <div className="banner-side"><span className="side-label">YOUR PROGRESS</span><div className="progress-ring" style={{ "--progress": `${activePlan.tasks.length ? Math.round(completed / activePlan.tasks.length * 100) : 0}%` } as React.CSSProperties}><div><strong>{activePlan.tasks.length ? Math.round(completed / activePlan.tasks.length * 100) : 0}%</strong><small>ready</small></div></div><button className="text-button" onClick={() => setView("My events")}><span>View event</span><span aria-hidden="true">↗</span></button></div>
           </section>
 
           <section className="stats-grid" aria-label="Event summary">
@@ -259,7 +280,7 @@ export default function Home() {
 
           <section className="lower-grid">
             <article className="panel tasks-panel">
-              <div className="panel-heading"><div><span className="panel-kicker">MAKE IT HAPPEN</span><h3>Your next steps</h3></div><button className="quiet-button" onClick={() => setView("My events")}>See all <span>↗</span></button></div>
+              <div className="panel-heading"><div><span className="panel-kicker">MAKE IT HAPPEN</span><h3>Your next steps</h3></div><button className="quiet-button" onClick={() => setView("My events")}><span>See all</span><span aria-hidden="true">↗</span></button></div>
               <div className="task-list">
                 {activePlan.tasks.slice(0, 4).map((task) => <label className={`task-row ${task.completed ? "task-done" : ""}`} key={task.id}>
                   <input type="checkbox" checked={task.completed} onChange={() => toggleTask(task.id)} aria-label={`${task.completed ? "Mark incomplete" : "Complete"}: ${task.title}`} />
@@ -273,7 +294,7 @@ export default function Home() {
             </article>
 
             <article className="panel budget-panel">
-              <div className="panel-heading"><div><span className="panel-kicker">SPEND WITH INTENTION</span><h3>Budget overview</h3></div><button className="quiet-button" onClick={() => setView("Budget planner")}>Details <span>↗</span></button></div>
+              <div className="panel-heading"><div><span className="panel-kicker">SPEND WITH INTENTION</span><h3>Budget overview</h3></div><button className="quiet-button" onClick={() => setView("Budget planner")}><span>Details</span><span aria-hidden="true">↗</span></button></div>
               <div className="budget-total"><strong>{money(activePlan.request.budget)}</strong><span>total planned</span></div>
               <div className="budget-bar" aria-label="Budget allocation breakdown">{activePlan.budget.map((item) => <span key={item.category} style={{ width: `${item.amount / activePlan.request.budget * 100}%`, background: item.color }} title={`${item.category}: ${money(item.amount)}`} />)}</div>
               <div className="budget-legend">{activePlan.budget.slice(0, 4).map((item) => <div key={item.category}><span className="legend-dot" style={{ background: item.color }} /><span>{item.category}</span><strong>{money(item.amount)}</strong></div>)}</div>
@@ -281,7 +302,7 @@ export default function Home() {
             </article>
           </section>
 
-          <section className="bottom-note"><div className="note-spark"><Sparkles size={16} /></div><p><strong>A thoughtful touch</strong><span>{activePlan.request.priorities.length ? `Keep ${activePlan.request.priorities.join(" and ").toLowerCase()} in view as your plan takes shape.` : "Add a few priorities to make every suggestion more personal."}</span></p><button onClick={() => setNotice("Priorities are included when you create an event.")}>Planning note <span>↗</span></button></section>
+          <section className="bottom-note"><div className="note-spark"><Sparkles size={16} /></div><p><strong>A thoughtful touch</strong><span>{activePlan.request.priorities.length ? `Keep ${activePlan.request.priorities.join(" and ").toLowerCase()} in view as your plan takes shape.` : "Add a few priorities to make every suggestion more personal."}</span></p><button onClick={() => setNotice("Priorities are included when you create an event.")}><span>Planning note</span><span aria-hidden="true">↗</span></button></section>
           </>}
           <footer className="footer"><span>Made for moments that matter <span className="heart">♥</span></span><span>GatherWise · Your plans stay on this device</span></footer>
         </div>

@@ -47,6 +47,16 @@ export const vendorSchema = z.object({
 });
 export type Vendor = z.infer<typeof vendorSchema>;
 
+export const runOfShowItemSchema = z.object({
+  id: z.string().min(1).max(120),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  activity: z.string().trim().min(2).max(120),
+  lead: z.string().trim().min(2).max(80),
+  location: z.string().trim().min(2).max(100),
+  notes: z.string().max(240),
+});
+export type RunOfShowItem = z.infer<typeof runOfShowItemSchema>;
+
 export type EventPlan = {
   id: string;
   request: EventRequest;
@@ -54,6 +64,7 @@ export type EventPlan = {
   budget: BudgetAllocation[];
   expenses: Expense[];
   vendors: Vendor[];
+  runOfShow: RunOfShowItem[];
   createdAt: string;
 };
 
@@ -76,6 +87,7 @@ export const planSchema = z.object({
   })).max(20),
   expenses: z.array(expenseSchema).max(500).default([]),
   vendors: z.array(vendorSchema).max(100).default([]),
+  runOfShow: z.array(runOfShowItemSchema).max(40).default([]),
   createdAt: z.iso.datetime(),
 });
 

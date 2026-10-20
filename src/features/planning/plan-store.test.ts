@@ -17,13 +17,14 @@ describe("local plan storage boundary", () => {
     const legacy = structuredClone(plan) as Record<string, unknown>;
     delete legacy.expenses;
     delete legacy.vendors;
+    delete legacy.runOfShow;
     legacy.budget = (legacy.budget as Array<Record<string, unknown>>).map((allocation) => {
       const previous = { ...allocation };
       delete previous.spent;
       return previous;
     });
     const migrated = readPlans(JSON.stringify([legacy]));
-    expect(migrated[0]).toMatchObject({ expenses: [], vendors: [] });
+    expect(migrated[0]).toMatchObject({ expenses: [], vendors: [], runOfShow: [] });
     expect(migrated[0]?.budget.every((item) => item.spent === 0)).toBe(true);
   });
 

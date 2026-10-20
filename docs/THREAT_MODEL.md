@@ -6,7 +6,7 @@ This review covers the current browser-only planner and the optional Gemini idea
 
 ## Assets and boundaries
 
-- Event type, date, approximate guest count, budget, location, priorities, vendor workflow states, and expenses are stored in the user's browser local storage.
+- Event type, date, approximate guest count, budget, location, priorities, vendor workflow states, expenses, and the day-of run of show are stored in the user's browser local storage.
 - A Gemini API key is read only by server-side route code from `GEMINI_API_KEY`.
 - When a user selects **Ask Gemini**, the server sends a bounded event summary to Google's Gemini API. The event name and guest identities are excluded.
 - Model output crosses back into the application as untrusted JSON and is validated before display.
@@ -28,4 +28,4 @@ This review covers the current browser-only planner and the optional Gemini idea
 
 ## Review status
 
-The route has unit coverage for request validation, payload size, provider quota failures, output validation, and local rate limits. Domain tests cover integer expense reconciliation, overspending, vendor-state changes, and migration from older browser plans. A manual browser run has verified event creation, task completion persistence, expense recording, vendor status persistence, and navigation views. This is a scoped review, not a claim of formal security certification or a full OWASP audit.
+The route has unit coverage for request validation, payload size, provider quota failures, output validation, and local rate limits. Domain tests cover integer expense reconciliation, overspending, vendor-state changes, run-of-show validation/sorting, and migration from older browser plans. A manual browser run verifies the interactive workflows and responsive layouts; automated axe checks cover the principal views. This is a scoped review, not a claim of formal security certification or a full OWASP audit.

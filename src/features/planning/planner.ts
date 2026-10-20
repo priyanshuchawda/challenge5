@@ -1,4 +1,4 @@
-import { expenseSchema, vendorSchema, type BudgetAllocation, type EventPlan, type EventRequest, type Expense, type PlanTask, type Vendor } from "./schema";
+import { expenseSchema, runOfShowItemSchema, vendorSchema, type BudgetAllocation, type EventPlan, type EventRequest, type Expense, type PlanTask, type RunOfShowItem, type Vendor } from "./schema";
 
 const budgetTemplate = [
   { category: "Venue", share: 0.28, color: "#728a67" },
@@ -51,7 +51,15 @@ export function createPlan(request: EventRequest, id = crypto.randomUUID()): Eve
     { id: `${id}-vendor-food`, name: "Catering shortlist", category: "Food & drink", status: "Researching", estimatedCost: budget.find((item) => item.category === "Food & drink")?.amount ?? 0, notes: "Confirm dietary requirements, service style, and taxes." },
     { id: `${id}-vendor-photo`, name: "Photography shortlist", category: "Photography", status: "Researching", estimatedCost: budget.find((item) => item.category === "Photography")?.amount ?? 0, notes: "Review portfolio, hours, deliverables, and usage rights." },
   ];
-  return { id, request, tasks, budget, expenses: [] as Expense[], vendors, createdAt: new Date().toISOString() };
+  const runOfShow: RunOfShowItem[] = [
+    { id: `${id}-ros-1`, time: "09:00", activity: "Venue access and setup check", lead: "Event host", location: request.location, notes: "Confirm accessible routes, restrooms, seating, and vendor arrival points." },
+    { id: `${id}-ros-2`, time: "10:00", activity: "Vendor arrival and sound check", lead: "Day-of coordinator", location: request.location, notes: "Check deliveries against the agreed schedule and contact list." },
+    { id: `${id}-ros-3`, time: "11:00", activity: "Guest welcome and arrivals", lead: "Welcome team", location: request.location, notes: "Keep the entrance clear and direct guests to seating and amenities." },
+    { id: `${id}-ros-4`, time: "12:00", activity: "Meal service and dietary check", lead: "Catering lead", location: request.location, notes: `Confirm the ${request.guests} guest estimate and agreed dietary arrangements.` },
+    { id: `${id}-ros-5`, time: "14:00", activity: "Main celebration and shared moment", lead: "Event host", location: request.location, notes: "Leave a short buffer between activities and announce any changes clearly." },
+    { id: `${id}-ros-6`, time: "16:00", activity: "Closing, guest departure, and pack-down", lead: "Day-of coordinator", location: request.location, notes: "Check lost property, vendor pickup, and venue handover requirements." },
+  ];
+  return { id, request, tasks, budget, expenses: [] as Expense[], vendors, runOfShow, createdAt: new Date().toISOString() };
 }
 
 export function budgetTotal(allocations: BudgetAllocation[]): number {
@@ -91,4 +99,13 @@ export function updateVendor(plan: EventPlan, vendorId: string, update: Partial<
   const vendors = [...plan.vendors];
   vendors[index] = vendorSchema.parse({ ...vendors[index], ...update });
   return { ...plan, vendors };
+}
+
+export function updateRunOfShowItem(plan: EventPlan, itemId: string, update: Partial<Omit<RunOfShowItem, "id">>): EventPlan {
+  const index = plan.runOfShow.findIndex((item) => item.id === itemId);
+  if (index < 0) throw new Error("Schedule item was not found.");
+  const runOfShow = [...plan.runOfShow];
+  runOfShow[index] = runOfShowItemSchema.parse({ ...runOfShow[index], ...update });
+  runOfShow.sort((a, b) => a.time.localeCompare(b.time));
+  return { ...plan, runOfShow };
 }

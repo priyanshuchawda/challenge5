@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addExpense, allocateBudget, budgetTotal, completedTaskCount, createPlan, remainingBudget, totalSpent, updateVendor } from "./planner";
+import { addExpense, allocateBudget, budgetTotal, completedTaskCount, createPlan, remainingBudget, totalSpent, updateRunOfShowItem, updateVendor } from "./planner";
 import { eventRequestSchema } from "./schema";
 
 const request = eventRequestSchema.parse({
@@ -55,5 +55,16 @@ describe("planning domain", () => {
     if (!venue) throw new Error("Expected the default venue checklist item.");
     const updated = updateVendor(plan, venue.id, { status: "Booked", estimatedCost: 300_000 });
     expect(updated.vendors[0]).toMatchObject({ status: "Booked", estimatedCost: 300_000 });
+  });
+
+  it("creates an ordered day-of schedule and validates schedule edits", () => {
+    const plan = createPlan(request, "schedule-event");
+    expect(plan.runOfShow.length).toBeGreaterThanOrEqual(5);
+    expect(plan.runOfShow.map((item) => item.time)).toEqual([...plan.runOfShow.map((item) => item.time)].sort());
+    const first = plan.runOfShow[0];
+    if (!first) throw new Error("Expected a starter schedule.");
+    const updated = updateRunOfShowItem(plan, first.id, { time: "08:30", lead: "Coordinator" });
+    expect(updated.runOfShow[0]).toMatchObject({ time: "08:30", lead: "Coordinator" });
+    expect(() => updateRunOfShowItem(plan, first.id, { time: "25:00" })).toThrow();
   });
 });

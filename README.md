@@ -9,10 +9,11 @@ GatherWise is a practical event-planning workspace for weddings, birthdays, and 
 - Complete tasks and keep plans in browser-local storage without requiring an account.
 - Track integer-valued expenses against deterministic budget allocations, including category actuals, remaining balance, and explicit overspend warnings.
 - Manage venue, catering, and photography vendor checklists through researching, contacted, quoted, and booked states; changes persist in the browser.
+- Edit a six-entry day-of run of show and export it as a spreadsheet-friendly CSV or print-ready plan.
 - Request tailored inspiration from Gemini 3.5 Flash-Lite through a server-only, structured-output API route, with Gemini 3.8 Flash as a bounded transient-error fallback.
 - Keep AI calls bounded by input size, output tokens, request time, and a three-request-per-minute limit.
 - Validate event input and persisted plans with Zod.
-- Run type checking, lint, domain tests, and a production build locally. GitHub Actions are disabled for this project.
+- Run strict type checking, lint, unit tests, production build, Playwright end-to-end flows, and automated axe accessibility checks locally. GitHub Actions are disabled for this project.
 - Use the demo without a third-party key or paid service.
 
 The current storage is local to one browser. It is suitable for the demo, not shared or multi-device persistence. Vendor prices and availability are estimates and are never presented as confirmed bookings. Existing saved plans are upgraded with empty expense/vendor records when loaded.
@@ -41,9 +42,10 @@ pnpm typecheck
 pnpm test
 pnpm lint
 pnpm build
+pnpm test:e2e
 ```
 
-The tests cover schema rejection and migration, integer budget reconciliation, overspend detection, schedule generation, task completion, vendor status updates, request validation, usage limits, model output validation, transient fallback behavior, and safe provider failures. Tests mock Gemini and do not consume API quota.
+Playwright uses the installed system Chromium and the production server; run `pnpm build` before `pnpm test:e2e`. Browser coverage checks expense overspend warnings, saved vendor and schedule edits, CSV export, print mode, and axe rules across four core views at desktop and mobile sizes. The tests cover schema rejection and migration, integer budget reconciliation, overspend detection, planning and run-of-show schedule generation/edit validation, task completion, vendor status updates, request validation, usage limits, model output validation, transient fallback behavior, and safe provider failures. Tests mock Gemini and do not consume API quota.
 
 ## Architecture
 
@@ -78,13 +80,11 @@ The app is a small modular monolith. UI components collect and present data, dom
 | Security | Runtime validation at request, provider-output, event, and storage boundaries; server-only key; user-controlled AI call; distributed production limiter |
 | Efficiency | Deterministic local planning, input/output bounds, one bounded provider request, no network dependency for the core flow |
 | Testing | Unit tests for budget, scheduling, validation, progress, Gemini output, provider fallback, and API failures; locally run quality gates |
-| Accessibility | Labeled inputs, keyboard-operable controls, focus styles, reduced-motion support, status announcements |
+| Accessibility | Labeled inputs, keyboard-operable controls, focus styles, reduced-motion support, status announcements, semantic tables, and manual responsive keyboard/screen-reader review |
 | Problem alignment | Event context, editable expense tracking, overspend detection, task timelines, vendor status pipeline, and personalized AI ideas |
 
-## Roadmap
+## Next scope
 
-1. Add printable and CSV plan export, then richer schedule editing.
-2. Add persistence/authentication only if the challenge requires multi-device accounts; enforce ownership and row-level security if a database is introduced.
-3. Add repeatable browser end-to-end and accessibility checks to CI for the complete user journey.
+Add authentication and shared persistence only if the challenge requires multi-device accounts; enforce ownership and row-level security if a database is introduced. GitHub Actions remain disabled by request; local quality checks are documented above.
 
 This staged scope keeps the free, no-key demo useful while the AI and persistent multi-user boundaries are built and verified.
