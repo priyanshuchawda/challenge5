@@ -1,0 +1,55 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { generateEventIdeas } from "./gemini";
+import { eventRequestSchema } from "@/features/planning/schema";
+
+const input = eventRequestSchema.parse({
+  name: "Test celebration", type: "Birthday", date: "2027-06-12", guests: 40,
+  budget: 250000, location: "Pune", priorities: ["Step-free access"],
+});
+const validIdeas = {
+  theme: "A relaxed garden gathering",
+  overview: "Use a small number of thoughtful details to make the gathering feel welcoming and easy to navigate.",
+  suggestions: [
+    { title: "A clear welcome point", detail: "Place a welcome sign near the entrance and keep the path to seating easy to identify.", category: "Accessibility", budgetFriendly: true },
+    { title: "Seasonal shared menu", detail: "Ask a local caterer about a simple seasonal menu that fits your confirmed dietary needs.", category: "Food", budgetFriendly: true },
+    { title: "Memory card table", detail: "Invite guests to leave a short birthday memory at a table beside the welcome area.", category: "Activities", budgetFriendly: true },
+  ],
+  contingency: "If weather changes, move guests to a confirmed indoor space and share the update through the invitation channel.",
+};
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+
+describe("Gemini planning provider", () => {
+  it("sends bounded event context and validates the structured response", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(validIdeas) }] } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(generateEventIdeas(input)).resolves.toEqual(validIdeas);
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/models/gemini-3.8-flash:generateContent");
+    expect((options.headers as Record<string, string>)["x-goog-api-key"]).toBe("test-key");
+    expect(String(options.body)).not.toContain("Test celebration");
+    expect(String(options.body)).toContain("Step-free access");
+  });
+
+  it("fails closed when no server key is configured", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "");
+    await expect(generateEventIdeas(input)).rejects.toMatchObject({ status: "unavailable" });
+  });
+
+  it("rejects output that does not meet the application schema", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"theme":"Incomplete"}' }] } }] }), { status: 200 })));
+    await expect(generateEventIdeas(input)).rejects.toMatchObject({ status: "invalid_output" });
+  });
+
+  it("maps upstream quota responses to a controlled provider error", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 429 })));
+    await expect(generateEventIdeas(input)).rejects.toMatchObject({ status: "quota" });
+  });
+});
