@@ -45,7 +45,7 @@ describe("Gemini full-plan provider", () => {
     expect(result.plan.budget.reduce((sum, item) => sum + item.amount, 0)).toBe(input.budget);
     expect(result.plan.timeline[0]?.dueDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-2.5-flash-lite");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-3.5-flash-lite");
     const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect((options.headers as Record<string, string>)["x-goog-api-key"]).toBe("test-key");
     expect(String(options.body)).toContain("Step-free access");

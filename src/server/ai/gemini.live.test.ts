@@ -30,8 +30,8 @@ describe("live Gemini integration", () => {
     expect(refinedIdeas.suggestions.length).toBeGreaterThanOrEqual(3);
     console.log(JSON.stringify({
       ok: true,
-      primaryModel: process.env.GEMINI_MODEL || "gemini-2.5-flash-lite",
-      fallbackConfigured: Boolean(process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash"),
+      primaryModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+      fallbackConfigured: Boolean(process.env.GEMINI_FALLBACK_MODEL || "gemini-3.8-flash"),
       schemaValid: true,
       generatedSuggestions: ideas.suggestions.length,
       refinedSuggestions: refinedIdeas.suggestions.length,

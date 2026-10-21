@@ -32,7 +32,7 @@ describe("Gemini planning provider", () => {
 
     await expect(generateEventIdeas(input)).resolves.toEqual(validIdeas);
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain("/models/gemini-2.5-flash-lite:generateContent");
+    expect(url).toContain("/models/gemini-3.5-flash-lite:generateContent");
     expect((options.headers as Record<string, string>)["x-goog-api-key"]).toBe("test-key");
     expect(String(options.body)).not.toContain("Test celebration");
     expect(String(options.body)).toContain("Step-free access");

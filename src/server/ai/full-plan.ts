@@ -2,8 +2,8 @@ import { fullPlanRequestSchema, fullPlanRefinementRequestSchema, type FullPlanRe
 import { GeminiError } from "@/server/ai/gemini";
 import { fullPlanDraftSchema, materializeFullPlan } from "@/features/planning/full-plan";
 
-const DEFAULT_PRIMARY_MODEL = "gemini-2.5-flash-lite";
-const DEFAULT_FALLBACK_MODEL = "gemini-2.5-flash";
+const DEFAULT_PRIMARY_MODEL = "gemini-3.5-flash-lite";
+const DEFAULT_FALLBACK_MODEL = "gemini-3.8-flash";
 
 function isRefinement(input: FullPlanRequest | (FullPlanRequest & { feedback: string; previousPlan: FullPlanResponse["plan"] })): input is FullPlanRequest & { feedback: string; previousPlan: FullPlanResponse["plan"] } {
   return "feedback" in input || "previousPlan" in input;
