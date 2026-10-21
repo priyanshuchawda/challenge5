@@ -39,6 +39,12 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Formatting
+        run: pnpm format:check
+
+      - name: Dead code
+        run: pnpm check:dead-code
+
       - name: Lint
         run: pnpm lint
 

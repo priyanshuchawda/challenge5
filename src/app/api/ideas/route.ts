@@ -9,26 +9,39 @@ const BODY_LIMIT = 8_192;
 
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
-  if (contentLength > BODY_LIMIT) return NextResponse.json({ error: "Request is too large." }, { status: 413 });
+  if (contentLength > BODY_LIMIT)
+    return NextResponse.json({ error: "Request is too large." }, { status: 413 });
 
   const body = await readBoundedJson(request, BODY_LIMIT);
   if (!body.ok) {
-    return NextResponse.json({ error: body.status === 413 ? "Request is too large." : "Request must contain valid JSON." }, { status: body.status });
+    return NextResponse.json(
+      { error: body.status === 413 ? "Request is too large." : "Request must contain valid JSON." },
+      { status: body.status },
+    );
   }
   const candidate = body.value;
-  const containsRefinement = typeof candidate === "object" && candidate !== null &&
+  const containsRefinement =
+    typeof candidate === "object" &&
+    candidate !== null &&
     ("refinement" in candidate || "currentIdeas" in candidate);
   const initialRequest = containsRefinement
     ? ideaRefinementRequestSchema.safeParse(candidate)
     : ideaRequestSchema.safeParse(candidate);
-  if (!initialRequest.success) return NextResponse.json({ error: "Check the event details and try again." }, { status: 400 });
+  if (!initialRequest.success)
+    return NextResponse.json({ error: "Check the event details and try again." }, { status: 400 });
 
   const limit = await checkIdeaRateLimit(request);
   if (!limit.allowed && "unavailable" in limit) {
-    return NextResponse.json({ error: "AI ideas are temporarily unavailable because usage protection is not configured." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      { error: "AI ideas are temporarily unavailable because usage protection is not configured." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
   }
   if (!limit.allowed) {
-    return NextResponse.json({ error: "Please wait before asking for more ideas." }, { status: 429, headers: { "Retry-After": String(limit.retryAfter) } });
+    return NextResponse.json(
+      { error: "Please wait before asking for more ideas." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    );
   }
 
   try {
@@ -36,11 +49,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ ideas }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof GeminiError && error.status === "quota") {
-      return NextResponse.json({ error: "Gemini is at its free usage limit right now. Your saved plan is unchanged." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+      return NextResponse.json(
+        { error: "Gemini is at its free usage limit right now. Your saved plan is unchanged." },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
     }
     if (error instanceof GeminiError && error.status === "invalid_output") {
-      return NextResponse.json({ error: "The AI returned an incomplete idea set. Please try again later." }, { status: 502, headers: { "Cache-Control": "no-store" } });
+      return NextResponse.json(
+        { error: "The AI returned an incomplete idea set. Please try again later." },
+        { status: 502, headers: { "Cache-Control": "no-store" } },
+      );
     }
-    return NextResponse.json({ error: "AI ideas are temporarily unavailable. Your saved plan is unchanged." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      { error: "AI ideas are temporarily unavailable. Your saved plan is unchanged." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }

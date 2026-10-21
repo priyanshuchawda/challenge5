@@ -7,7 +7,10 @@ const MAX_REQUESTS = 3;
 const localWindows = new Map<string, { startedAt: number; count: number }>();
 let distributedLimiter: { key: string; limiter: Ratelimit } | undefined;
 
-type RateResult = { allowed: true } | { allowed: false; retryAfter: number } | { allowed: false; unavailable: true };
+type RateResult =
+  | { allowed: true }
+  | { allowed: false; retryAfter: number }
+  | { allowed: false; unavailable: true };
 
 function createDistributedLimiter(url: string, token: string) {
   const redis = new Redis({ url, token });
@@ -20,7 +23,8 @@ function createDistributedLimiter(url: string, token: string) {
 
 function getDistributedLimiter(url: string, token: string): Ratelimit {
   const key = createHash("sha256").update(`${url}\0${token}`).digest("hex");
-  if (distributedLimiter?.key !== key) distributedLimiter = { key, limiter: createDistributedLimiter(url, token) };
+  if (distributedLimiter?.key !== key)
+    distributedLimiter = { key, limiter: createDistributedLimiter(url, token) };
   return distributedLimiter.limiter;
 }
 
@@ -42,7 +46,8 @@ export async function checkIdeaRateLimit(request: Request): Promise<RateResult> 
   const address = request.headers.get("x-real-ip")?.trim() || "local-anonymous";
   const identity = createHash("sha256").update(address).digest("hex");
 
-  if (process.env.NODE_ENV === "production" && process.env.LOCAL_AI_RATE_LIMIT !== "true") return distributedLimit(identity);
+  if (process.env.NODE_ENV === "production" && process.env.LOCAL_AI_RATE_LIMIT !== "true")
+    return distributedLimit(identity);
 
   const now = Date.now();
   const current = localWindows.get(identity);
@@ -51,6 +56,10 @@ export async function checkIdeaRateLimit(request: Request): Promise<RateResult> 
     return { allowed: true };
   }
   current.count += 1;
-  if (current.count > MAX_REQUESTS) return { allowed: false, retryAfter: Math.max(1, Math.ceil((60_000 - (now - current.startedAt)) / 1_000)) };
+  if (current.count > MAX_REQUESTS)
+    return {
+      allowed: false,
+      retryAfter: Math.max(1, Math.ceil((60_000 - (now - current.startedAt)) / 1_000)),
+    };
   return { allowed: true };
 }

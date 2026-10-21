@@ -1,12 +1,26 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getPlansSnapshot, getServerPlansSnapshot, readPlans, savePlans, subscribeToPlans } from "./plan-store";
+import {
+  getPlansSnapshot,
+  getServerPlansSnapshot,
+  readPlans,
+  savePlans,
+  subscribeToPlans,
+} from "./plan-store";
 import { createPlan } from "./planner";
 import { eventRequestSchema } from "./schema";
 
-const plan = createPlan(eventRequestSchema.parse({
-  name: "Demo celebration", type: "Birthday", date: "2027-06-12", guests: 20,
-  budget: 80000, location: "Pune", priorities: [],
-}), "stored-plan");
+const plan = createPlan(
+  eventRequestSchema.parse({
+    name: "Demo celebration",
+    type: "Birthday",
+    date: "2027-06-12",
+    guests: 20,
+    budget: 80000,
+    location: "Pune",
+    priorities: [],
+  }),
+  "stored-plan",
+);
 
 describe("local plan storage boundary", () => {
   it("accepts a plan matching the runtime schema", () => {
@@ -34,7 +48,6 @@ describe("local plan storage boundary", () => {
     expect(readPlans(null)).toEqual([]);
   });
 });
-
 
 describe("browser storage adapter", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -64,7 +77,8 @@ describe("browser storage adapter", () => {
         group.add(listener);
         listeners.set(name, group);
       },
-      removeEventListener: (name: string, listener: () => void) => listeners.get(name)?.delete(listener),
+      removeEventListener: (name: string, listener: () => void) =>
+        listeners.get(name)?.delete(listener),
       dispatchEvent: (event: Event) => {
         listeners.get(event.type)?.forEach((listener) => listener());
         return true;

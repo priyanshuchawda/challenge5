@@ -9,14 +9,20 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@upstash/redis", () => ({
   Redis: class {
-    constructor(config: unknown) { mocks.redisConstructor(config); }
+    constructor(config: unknown) {
+      mocks.redisConstructor(config);
+    }
   },
 }));
 
 vi.mock("@upstash/ratelimit", () => ({
   Ratelimit: class {
-    constructor(config: unknown) { mocks.ratelimitConstructor(config); }
-    static slidingWindow(limit: number, interval: string) { return mocks.slidingWindow(limit, interval); }
+    constructor(config: unknown) {
+      mocks.ratelimitConstructor(config);
+    }
+    static slidingWindow(limit: number, interval: string) {
+      return mocks.slidingWindow(limit, interval);
+    }
     limit = mocks.limit;
   },
 }));
@@ -44,7 +50,10 @@ describe("AI request limits", () => {
     await expect(checkIdeaRateLimit(caller)).resolves.toEqual({ allowed: true });
     await expect(checkIdeaRateLimit(caller)).resolves.toEqual({ allowed: true });
     await expect(checkIdeaRateLimit(caller)).resolves.toEqual({ allowed: true });
-    await expect(checkIdeaRateLimit(caller)).resolves.toMatchObject({ allowed: false, retryAfter: 60 });
+    await expect(checkIdeaRateLimit(caller)).resolves.toMatchObject({
+      allowed: false,
+      retryAfter: 60,
+    });
     vi.advanceTimersByTime(60_000);
     await expect(checkIdeaRateLimit(caller)).resolves.toEqual({ allowed: true });
   });
@@ -53,7 +62,10 @@ describe("AI request limits", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
-    await expect(checkIdeaRateLimit(request())).resolves.toEqual({ allowed: false, unavailable: true });
+    await expect(checkIdeaRateLimit(request())).resolves.toEqual({
+      allowed: false,
+      unavailable: true,
+    });
   });
 
   it("uses the local limiter only when explicitly enabled in production", async () => {
@@ -69,9 +81,14 @@ describe("AI request limits", () => {
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test-token");
 
     await expect(checkIdeaRateLimit(request("198.51.100.10"))).resolves.toEqual({ allowed: true });
-    expect(mocks.redisConstructor).toHaveBeenCalledWith({ url: "https://redis.example/", token: "test-token" });
+    expect(mocks.redisConstructor).toHaveBeenCalledWith({
+      url: "https://redis.example/",
+      token: "test-token",
+    });
     expect(mocks.slidingWindow).toHaveBeenCalledWith(3, "60 s");
-    expect(mocks.ratelimitConstructor).toHaveBeenCalledWith(expect.objectContaining({ prefix: "gatherwise:ideas:v2" }));
+    expect(mocks.ratelimitConstructor).toHaveBeenCalledWith(
+      expect.objectContaining({ prefix: "gatherwise:ideas:v2" }),
+    );
     expect(mocks.limit).toHaveBeenCalledWith(expect.stringMatching(/^[a-f0-9]{64}$/));
   });
 
@@ -80,7 +97,10 @@ describe("AI request limits", () => {
     vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example");
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test-token");
     mocks.limit.mockResolvedValue({ success: false, reset: Date.now() + 42_000 });
-    await expect(checkIdeaRateLimit(request())).resolves.toEqual({ allowed: false, retryAfter: 42 });
+    await expect(checkIdeaRateLimit(request())).resolves.toEqual({
+      allowed: false,
+      retryAfter: 42,
+    });
   });
 
   it("fails closed when the Upstash SDK cannot reach Redis", async () => {
@@ -88,6 +108,9 @@ describe("AI request limits", () => {
     vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example");
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test-token");
     mocks.limit.mockRejectedValue(new Error("network failure"));
-    await expect(checkIdeaRateLimit(request())).resolves.toEqual({ allowed: false, unavailable: true });
+    await expect(checkIdeaRateLimit(request())).resolves.toEqual({
+      allowed: false,
+      unavailable: true,
+    });
   });
 });

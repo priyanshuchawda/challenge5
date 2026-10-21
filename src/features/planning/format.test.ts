@@ -12,6 +12,8 @@ describe("planning display formatting", () => {
   });
 
   it("formats an ISO date without shifting the event day", () => {
-    expect(formatDate("2027-06-12", { day: "numeric", month: "long", year: "numeric" })).toBe("12 June 2027");
+    expect(formatDate("2027-06-12", { day: "numeric", month: "long", year: "numeric" })).toBe(
+      "12 June 2027",
+    );
   });
 });

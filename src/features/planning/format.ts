@@ -18,6 +18,9 @@ export function formatMoney(amount: number, currency: Currency = "INR"): string 
   }).format(amount);
 }
 
-export function formatDate(date: string, options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }): string {
+export function formatDate(
+  date: string,
+  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" },
+): string {
   return new Intl.DateTimeFormat("en-IN", options).format(new Date(`${date}T12:00:00`));
 }

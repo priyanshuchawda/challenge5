@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const supportedCurrencies = ["INR", "USD", "EUR", "GBP", "AED", "CAD", "AUD"] as const;
-export type Currency = typeof supportedCurrencies[number];
+export type Currency = (typeof supportedCurrencies)[number];
 
 export const eventRequestSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -25,12 +25,13 @@ export const taskDraftSchema = z.object({
 export type TaskDraft = z.infer<typeof taskDraftSchema>;
 export type PlanTask = TaskDraft & { id: string; completed: boolean };
 
-export type BudgetAllocation = {
-  category: string;
-  amount: number;
-  color: string;
-  spent: number;
-};
+const budgetAllocationSchema = z.object({
+  category: z.string().trim().min(1).max(80),
+  amount: z.number().int().nonnegative(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  spent: z.number().int().nonnegative().default(0),
+});
+export type BudgetAllocation = z.infer<typeof budgetAllocationSchema>;
 
 export const expenseSchema = z.object({
   id: z.string().min(1).max(120),
@@ -75,20 +76,19 @@ export type EventPlan = {
 const planSchema = z.object({
   id: z.string().min(1).max(100),
   request: eventRequestSchema,
-  tasks: z.array(z.object({
-    id: z.string().min(1).max(120),
-    title: z.string().min(1).max(160),
-    dueDate: z.iso.date(),
-    priority: z.enum(["High", "Medium", "Low"]),
-    category: z.string().min(1).max(80),
-    completed: z.boolean(),
-  })).max(100),
-  budget: z.array(z.object({
-    category: z.string().min(1).max(80),
-    amount: z.number().int().nonnegative(),
-    color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-    spent: z.number().int().nonnegative().default(0),
-  })).max(20),
+  tasks: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(120),
+        title: z.string().min(1).max(160),
+        dueDate: z.iso.date(),
+        priority: z.enum(["High", "Medium", "Low"]),
+        category: z.string().min(1).max(80),
+        completed: z.boolean(),
+      }),
+    )
+    .max(100),
+  budget: z.array(budgetAllocationSchema).max(20),
   expenses: z.array(expenseSchema).max(500).default([]),
   vendors: z.array(vendorSchema).max(100).default([]),
   runOfShow: z.array(runOfShowItemSchema).max(40).default([]),
@@ -109,12 +109,17 @@ export const ideaRequestSchema = eventRequestSchema.pick({
 export const eventIdeasSchema = z.object({
   theme: z.string().trim().min(3).max(100),
   overview: z.string().trim().min(20).max(500),
-  suggestions: z.array(z.object({
-    title: z.string().trim().min(3).max(80),
-    detail: z.string().trim().min(20).max(360),
-    category: z.enum(["Atmosphere", "Food", "Accessibility", "Activities", "Contingency"]),
-    budgetFriendly: z.boolean(),
-  })).min(3).max(4),
+  suggestions: z
+    .array(
+      z.object({
+        title: z.string().trim().min(3).max(80),
+        detail: z.string().trim().min(20).max(360),
+        category: z.enum(["Atmosphere", "Food", "Accessibility", "Activities", "Contingency"]),
+        budgetFriendly: z.boolean(),
+      }),
+    )
+    .min(3)
+    .max(4),
   contingency: z.string().trim().min(20).max(360),
 });
 
@@ -144,32 +149,52 @@ export type FullPlanRequest = z.infer<typeof fullPlanRequestSchema>;
 export const fullPlanResponseSchema = z.object({
   plan: z.object({
     summary: z.string().trim().min(30).max(700),
-    budget: z.array(z.object({
-      category: z.string().trim().min(2).max(60),
-      amount: z.number().int().nonnegative().max(1_000_000_000),
-      percent: z.number().min(0).max(100).optional(),
-      tip: z.string().trim().min(12).max(240),
-      color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-      spent: z.number().int().nonnegative().default(0),
-    })).min(3).max(10),
-    timeline: z.array(z.object({
-      title: z.string().trim().min(3).max(120),
-      dueDate: z.iso.date(),
-      priority: z.enum(["High", "Medium", "Low"]),
-      category: z.string().trim().min(2).max(60),
-    })).min(5).max(18),
-    vendors: z.array(z.object({
-      category: z.string().trim().min(2).max(60),
-      lookFor: z.string().trim().min(15).max(240),
-      questions: z.array(z.string().trim().min(8).max(180)).min(2).max(5),
-      dueDate: z.iso.date(),
-    })).min(2).max(8),
-    ideas: z.array(z.object({
-      area: z.string().trim().min(2).max(40),
-      title: z.string().trim().min(3).max(80),
-      description: z.string().trim().min(20).max(280),
-      whyItFits: z.string().trim().min(20).max(240),
-    })).min(3).max(6),
+    budget: z
+      .array(
+        z.object({
+          category: z.string().trim().min(2).max(60),
+          amount: z.number().int().nonnegative().max(1_000_000_000),
+          percent: z.number().min(0).max(100).optional(),
+          tip: z.string().trim().min(12).max(240),
+          color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+          spent: z.number().int().nonnegative().default(0),
+        }),
+      )
+      .min(3)
+      .max(10),
+    timeline: z
+      .array(
+        z.object({
+          title: z.string().trim().min(3).max(120),
+          dueDate: z.iso.date(),
+          priority: z.enum(["High", "Medium", "Low"]),
+          category: z.string().trim().min(2).max(60),
+        }),
+      )
+      .min(5)
+      .max(18),
+    vendors: z
+      .array(
+        z.object({
+          category: z.string().trim().min(2).max(60),
+          lookFor: z.string().trim().min(15).max(240),
+          questions: z.array(z.string().trim().min(8).max(180)).min(2).max(5),
+          dueDate: z.iso.date(),
+        }),
+      )
+      .min(2)
+      .max(8),
+    ideas: z
+      .array(
+        z.object({
+          area: z.string().trim().min(2).max(40),
+          title: z.string().trim().min(3).max(80),
+          description: z.string().trim().min(20).max(280),
+          whyItFits: z.string().trim().min(20).max(240),
+        }),
+      )
+      .min(3)
+      .max(6),
   }),
 });
 export type FullPlanResponse = z.infer<typeof fullPlanResponseSchema>;

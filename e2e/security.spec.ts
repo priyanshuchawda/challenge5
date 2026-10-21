@@ -1,9 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test("serves the app with a per-response CSP nonce and no browser policy violations", async ({ page }) => {
+test("serves the app with a per-response CSP nonce and no browser policy violations", async ({
+  page,
+}) => {
   const policyErrors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error" && /content security policy/i.test(message.text())) policyErrors.push(message.text());
+    if (message.type() === "error" && /content security policy/i.test(message.text()))
+      policyErrors.push(message.text());
   });
 
   const response = await page.goto("/");

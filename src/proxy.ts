@@ -20,7 +20,10 @@ function createContentSecurityPolicy(nonce: string, isDevelopment: boolean): str
 
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const contentSecurityPolicy = createContentSecurityPolicy(nonce, process.env.NODE_ENV === "development");
+  const contentSecurityPolicy = createContentSecurityPolicy(
+    nonce,
+    process.env.NODE_ENV === "development",
+  );
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
   requestHeaders.set("x-nonce", nonce);

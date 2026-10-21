@@ -1,0 +1,9 @@
+.agents/
+.next/
+.vercel/
+coverage/
+node_modules/
+playwright-report/
+test-results/
+skills-lock.json
+pnpm-lock.yaml

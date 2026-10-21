@@ -26,15 +26,25 @@ export function readPlans(snapshot: string | null): EventPlan[] {
   if (!snapshot) return [];
   try {
     const parsed: unknown = JSON.parse(snapshot);
-    const migrated = Array.isArray(parsed) ? parsed.map((item: unknown) => {
-      if (!item || typeof item !== "object") return item;
-      const record = item as Record<string, unknown>;
-      return { expenses: [], vendors: [], runOfShow: [], ...record, budget: Array.isArray(record.budget) ? record.budget.map((allocation: unknown) => {
-        if (!allocation || typeof allocation !== "object") return allocation;
-        const value = allocation as Record<string, unknown>;
-        return { spent: 0, ...value };
-      }) : record.budget };
-    }) : parsed;
+    const migrated = Array.isArray(parsed)
+      ? parsed.map((item: unknown) => {
+          if (!item || typeof item !== "object") return item;
+          const record = item as Record<string, unknown>;
+          return {
+            expenses: [],
+            vendors: [],
+            runOfShow: [],
+            ...record,
+            budget: Array.isArray(record.budget)
+              ? record.budget.map((allocation: unknown) => {
+                  if (!allocation || typeof allocation !== "object") return allocation;
+                  const value = allocation as Record<string, unknown>;
+                  return { spent: 0, ...value };
+                })
+              : record.budget,
+          };
+        })
+      : parsed;
     const result = plansSchema.safeParse(migrated);
     return result.success ? result.data : [];
   } catch {
