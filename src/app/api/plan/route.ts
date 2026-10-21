@@ -32,6 +32,9 @@ export async function POST(request: Request) {
     const result = await generateFullPlan(parsed.data);
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    console.warn("AI plan request failed", error instanceof GeminiError
+      ? { providerStatus: error.status, httpStatus: error.httpStatus }
+      : { providerStatus: "unexpected", errorName: error instanceof Error ? error.name : "unknown" });
     if (error instanceof GeminiError && error.status === "quota") {
       return NextResponse.json({ error: "Gemini is at its free usage limit right now. Your saved plan is unchanged." }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
