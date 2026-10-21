@@ -67,12 +67,16 @@ describe("Gemini full-plan provider", () => {
     expect(body.generationConfig.maxOutputTokens).toBe(5000);
   });
 
-  it("rejects incomplete model output and does not send a fallback request for invalid structure", async () => {
+  it("recovers from incomplete primary output using one bounded fallback", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
-    const fetchMock = vi.fn().mockResolvedValue(response({ summary: "incomplete" }));
+    vi.stubEnv("GEMINI_MODEL", "gemini-primary-test");
+    vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-fallback-test");
+    const fetchMock = vi.fn().mockResolvedValueOnce(response({ summary: "incomplete" })).mockResolvedValueOnce(response(draft));
     vi.stubGlobal("fetch", fetchMock);
-    await expect(generateFullPlan(input)).rejects.toMatchObject({ status: "invalid_output" });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await expect(generateFullPlan(input)).resolves.toHaveProperty("plan.budget");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-primary-test");
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("gemini-fallback-test");
   });
 
   it("maps network failures to a controlled provider error", async () => {
@@ -88,6 +92,8 @@ describe("Gemini full-plan provider", () => {
     { candidates: [{ content: { parts: [{ text: "not-json" }] } }] },
   ])("rejects malformed upstream response envelopes", async (body) => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubEnv("GEMINI_MODEL", "gemini-primary-test");
+    vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-primary-test");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })));
     await expect(generateFullPlan(input)).rejects.toMatchObject({ status: "invalid_output" });
   });

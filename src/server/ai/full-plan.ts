@@ -78,7 +78,11 @@ export async function generateFullPlan(input: FullPlanRequest | (FullPlanRequest
 
   try { return await requestModel(primary); }
   catch (error) {
-    if (fallback !== primary && error instanceof GeminiError && error.status === "unavailable" && (error.httpStatus === undefined || error.httpStatus >= 500)) return requestModel(fallback);
+    const retryableProviderFailure = error instanceof GeminiError && (
+      error.status === "invalid_output" ||
+      (error.status === "unavailable" && (error.httpStatus === undefined || error.httpStatus >= 500))
+    );
+    if (fallback !== primary && retryableProviderFailure) return requestModel(fallback);
     throw error;
   }
 }
