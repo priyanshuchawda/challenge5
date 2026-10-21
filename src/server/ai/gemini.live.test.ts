@@ -1,7 +1,8 @@
 import { loadEnvConfig } from "@next/env";
 import { describe, expect, it } from "vitest";
 import { generateEventIdeas } from "./gemini";
-import { eventIdeasSchema, type IdeaRequest } from "@/features/planning/schema";
+import { generateFullPlan } from "./full-plan";
+import { eventIdeasSchema, fullPlanRequestSchema, fullPlanResponseSchema, type IdeaRequest } from "@/features/planning/schema";
 
 loadEnvConfig(process.cwd(), true);
 
@@ -35,5 +36,18 @@ describe("live Gemini integration", () => {
       generatedSuggestions: ideas.suggestions.length,
       refinedSuggestions: refinedIdeas.suggestions.length,
     }));
+  }, 45_000);
+
+  it("generates a complete structured plan with deterministic totals and real dates", async () => {
+    expect(process.env.GEMINI_API_KEY, "Set GEMINI_API_KEY in .env.local before running the live smoke test").toBeTruthy();
+    const request = fullPlanRequestSchema.parse({
+      eventType: "Birthday", eventDate: "2027-06-12", location: "Pune, India", guestCount: 24,
+      budget: 60_003, currency: "INR", vibe: "garden lunch", priorities: "Step-free access, vegetarian food", language: "English",
+    });
+    const result = fullPlanResponseSchema.parse(await generateFullPlan(request));
+    expect(result.plan.budget.reduce((sum, item) => sum + item.amount, 0)).toBe(request.budget);
+    expect(result.plan.timeline.length).toBeGreaterThanOrEqual(5);
+    expect(result.plan.vendors.length).toBeGreaterThanOrEqual(2);
+    console.log(JSON.stringify({ ok: true, schemaValid: true, allocations: result.plan.budget.length, tasks: result.plan.timeline.length, vendorGuides: result.plan.vendors.length, ideas: result.plan.ideas.length }));
   }, 45_000);
 });

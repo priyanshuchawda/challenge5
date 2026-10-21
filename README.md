@@ -1,6 +1,6 @@
 # GatherWise
 
-GatherWise is a practical event-planning workspace for weddings, birthdays, and community events. The application owns budgets, task status, and dates. Gemini suggests and refines ideas; it never writes financial or task state.
+GatherWise is a practical event-planning workspace for weddings, birthdays, and community events. The application owns budgets, task status, and dates. Gemini proposes a complete plan and optional refinements; deterministic application logic calculates money and validates every suggestion before it can be applied.
 
 Live demo: [gatherwise-event-planner.vercel.app](https://gatherwise-event-planner.vercel.app)
 
@@ -14,9 +14,13 @@ Live demo: [gatherwise-event-planner.vercel.app](https://gatherwise-event-planne
 - Edit a six-entry day-of run of show and export it as a spreadsheet-friendly CSV or print-ready plan.
 - Request tailored inspiration from Gemini 2.5 Flash-Lite through a server-only, structured-output API route, with Gemini 2.5 Flash as a bounded transient-error fallback.
 - Refine a generated idea set in plain language while preserving event context and keeping saved budgets, tasks, and event data deterministic.
+- Generate, refine, review, and selectively apply a complete AI-proposed budget, dated timeline, vendor screening guide, and event ideas in English, Hindi, Tamil, Bengali, Spanish, or French.
+- Support INR, USD, EUR, GBP, AED, CAD, and AUD. AI budget weights are converted into exact integer totals by largest-remainder allocation; applying a plan preserves expenses, completed tasks, and vendor workflow status.
+- Enforce a byte-bounded request reader that cancels oversized streams before buffering them, strict runtime schemas for requests and model output, timeouts, and a shared Upstash sliding-window limiter that fails closed in production.
+- Apply a per-request nonce-based Content Security Policy to rendered pages and a restrictive policy to API responses, alongside standard security headers.
 - Keep AI calls bounded by input size, output tokens, request time, and a three-request-per-minute limit.
 - Validate event input and persisted plans with Zod.
-- Run strict type checking, lint, unit tests, production build, Playwright end-to-end flows, and automated axe accessibility checks locally. GitHub Actions are disabled for this project.
+- Run strict type checking, lint, unit tests, production build, Playwright end-to-end flows, and automated axe accessibility checks locally. GitHub Actions will be enabled after the final verification and push.
 - Use the demo without a third-party key or paid service.
 
 The current storage is local to one browser. It is suitable for the demo, not shared or multi-device persistence. Vendor prices and availability are estimates and are never presented as confirmed bookings. Existing saved plans are upgraded with empty expense/vendor records when loaded.
@@ -55,9 +59,9 @@ pnpm build
 pnpm test:e2e
 ```
 
-Playwright uses the installed system Chromium and the production server; run `pnpm build` before `pnpm test:e2e`. Browser coverage checks expense overspend warnings, saved vendor and schedule edits, custom task creation and persistence, CSV export, print mode, AI suggestion refinement without changing saved event data, security headers, and axe rules across four core views at desktop and mobile sizes. The suite has 48 unit tests plus 7 production-browser tests. The latest `pnpm test:coverage` run measured 97.51% lines overall, 100% for the planning domain, 96.29% for the AI route, and 100% for the rate limiter. The measured Vitest coverage is for backend modules exercised by unit tests; UI behavior is covered separately with Playwright and axe checks. Unit and browser tests mock Gemini and do not consume API quota.
+Playwright uses the installed system Chromium and the production server; run `pnpm build` before `pnpm test:e2e`. Browser coverage checks expense overspend warnings, saved vendor and schedule edits, custom task creation and persistence, CSV export, print mode, AI suggestion refinement, complete plan generation/refinement/apply with state preservation, the page CSP nonce and security headers, and axe rules across core views at desktop and mobile sizes. The latest complete run has 72 unit tests plus 9 production-browser tests. The latest Vitest coverage is 95.83% statements, 91.20% branches, 97.40% functions, and 98.72% lines across included API, domain, AI, HTTP, and limiter modules. Unit and browser tests mock Gemini and do not consume API quota; the separately named live smoke test makes real Gemini requests.
 
-To exercise the real Gemini API with a small synthetic event, run `pnpm test:gemini:live` after setting `GEMINI_API_KEY` in `.env.local`. This is intentionally separate from `pnpm test` and CI because it uses two API requests: generate suggestions, then refine them with bounded user feedback. Both responses are validated against the application schema. It prints no prompts, credentials, or generated content. The live test uses `NODE_ENV=development` so Next loads the ignored `.env.local` file; ordinary tests remain isolated from local secrets. Never enable local-only rate-limit bypasses on a public deployment.
+To exercise the real Gemini API with synthetic event details, run `pnpm test:gemini:live` after setting `GEMINI_API_KEY` in `.env.local`. This is intentionally separate from `pnpm test` and CI because it uses real API quota: generate and refine ideas, plus generate a complete plan. Responses are validated against application schemas; output excludes prompts, credentials, and generated content. The live test uses `NODE_ENV=development` so Next loads the ignored `.env.local` file; ordinary tests remain isolated from local secrets. Never enable local-only rate-limit bypasses on a public deployment.
 
 ## Architecture
 
@@ -66,7 +70,10 @@ src/app/                    Next.js App Router and accessible planner UI
 src/features/planning/      Zod contracts, deterministic domain rules, local store
 src/server/ai/              Server-only Gemini provider and output validation
 src/server/security/         Local and distributed AI request limits
-src/app/api/ideas/           Bounded API route for user-requested AI ideas
+src/app/api/ideas/           Bounded API route for AI event inspiration
+src/app/api/plan/            Bounded API route for full plan generation and refinement
+src/server/http/             Streaming request reader with hard byte limits
+src/proxy.ts                 Per-request nonce CSP for rendered pages
 docs/THREAT_MODEL.md         Assets, trust boundaries, mitigations, and known gaps
 public/                     Static assets
 problem.md                  Original challenge statement
@@ -89,14 +96,14 @@ The app is a small modular monolith. UI components collect and present data, dom
 | Evaluation area | Evidence in the repository |
 | --- | --- |
 | Code quality | Strict TypeScript, small planning module, schema inferred from Zod, reproducible pnpm lockfile |
-| Security | Runtime validation at request, provider-output, event, and storage boundaries; server-only key; user-controlled AI call; distributed production limiter |
+| Security | Runtime validation at request, provider-output, event, and storage boundaries; server-only key; byte-bounded streaming input; nonce CSP; distributed production limiter |
 | Efficiency | Deterministic local planning, input/output bounds, bounded timeouts, rate-limited AI calls, no network dependency for the core flow |
-| Testing | Unit tests for budget, scheduling, validation, progress, Gemini output, provider fallback, and API failures; locally run quality gates |
+| Testing | 72 unit tests for budget, scheduling, validation, progress, provider fallback, request limits, and API failures; nine production-browser tests with axe and CSP assertions; live synthetic Gemini smoke test |
 | Accessibility | Labeled inputs, keyboard-operable controls, focus styles, reduced-motion support, status announcements, semantic tables, and manual responsive keyboard/screen-reader review |
-| Problem alignment | Event context, custom tasks, editable expense tracking, overspend detection, task timelines, vendor status pipeline, and refinable personalized AI ideas |
+| Problem alignment | Event context, full AI plan proposal, custom tasks, editable expense tracking, overspend detection, dated timeline, vendor screening prompts and status pipeline, six output languages, and plan refinement |
 
 ## Next scope
 
-Add authentication and shared persistence only if the challenge requires multi-device accounts; enforce ownership and row-level security if a database is introduced. GitHub Actions remain disabled by request; local quality checks are documented above.
+Add authentication and shared persistence only if the challenge requires multi-device accounts; enforce ownership and row-level security if a database is introduced. CI runs the reproducible local checks on pushes and pull requests; real Gemini smoke tests remain manual so ordinary builds do not need provider credentials.
 
 This staged scope keeps the free, no-key demo useful while the AI and persistent multi-user boundaries are built and verified.

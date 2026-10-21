@@ -34,7 +34,7 @@ export function TimelineAndVendorsView({ plan, completed, onToggleTask, onVendor
           <h4 id="vendor-title"><Store size={16} /> Vendor pipeline <span>{bookedCount}/{plan.vendors.length} booked</span></h4>
           <div className="vendor-list">{plan.vendors.map((vendor) => (
             <article className="vendor-card" key={vendor.id}>
-              <div className="vendor-card-heading"><div><span className="panel-kicker">{vendor.category.toUpperCase()}</span><h5>{vendor.name}</h5></div><strong>{formatMoney(vendor.estimatedCost)}</strong></div>
+              <div className="vendor-card-heading"><div><span className="panel-kicker">{vendor.category.toUpperCase()}</span><h5>{vendor.name}</h5></div><strong>{formatMoney(vendor.estimatedCost, plan.request.currency)}</strong></div>
               <p>{vendor.notes}</p>
               <label className="vendor-status-label">Status<select aria-label={`${vendor.category} vendor status`} value={vendor.status} onChange={(event) => onVendorStatusChange(vendor.id, event.target.value as Vendor["status"])}><option>Researching</option><option>Contacted</option><option>Quoted</option><option>Booked</option></select></label>
             </article>

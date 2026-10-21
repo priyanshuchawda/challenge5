@@ -7,7 +7,6 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4173",
     browserName: "chromium",
-    launchOptions: { executablePath: "/usr/bin/chromium-browser", args: ["--no-sandbox"] },
   },
   webServer: {
     command: "pnpm exec next start --hostname 127.0.0.1 --port 4173",

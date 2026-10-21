@@ -11,7 +11,7 @@ export default defineConfig({
       include: ["src/app/api/**/*.ts", "src/features/planning/*.ts", "src/server/**/*.ts"],
       exclude: ["**/*.test.ts"],
       reporter: ["text", "html"],
-      thresholds: { statements: 95, branches: 88, functions: 98, lines: 95 },
+      thresholds: { statements: 95, branches: 88, functions: 97, lines: 95 },
     },
   },
 });

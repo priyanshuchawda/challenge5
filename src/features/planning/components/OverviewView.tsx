@@ -30,7 +30,7 @@ export function OverviewView({ plan, eventCount, completed, daysUntil, formatted
     <section className="stats-grid" aria-label="Event summary">
       <article className="stat-card"><div className="stat-icon green"><CalendarDays size={17} /></div><span className="stat-label">UPCOMING EVENTS</span><strong className="stat-value">{eventCount.toString().padStart(2, "0")}</strong><span className="stat-foot"><span className="trend up"><ArrowUpRight size={14} /> Active</span> in your workspace</span></article>
       <article className="stat-card"><div className="stat-icon peach"><Check size={18} /></div><span className="stat-label">TASKS COMPLETED</span><strong className="stat-value">{completed}<small> / {plan.tasks.length}</small></strong><span className="stat-foot"><span className="trend up"><ArrowUpRight size={14} /> Keep going</span> you’re on track</span></article>
-      <article className="stat-card"><div className="stat-icon lilac"><WalletCards size={17} /></div><span className="stat-label">PLANNED BUDGET</span><strong className="stat-value stat-money">{formatMoney(plan.request.budget)}</strong><span className="stat-foot"><span className="trend down"><ArrowDownRight size={14} /> 0%</span> spend tracked so far</span></article>
+      <article className="stat-card"><div className="stat-icon lilac"><WalletCards size={17} /></div><span className="stat-label">PLANNED BUDGET</span><strong className="stat-value stat-money">{formatMoney(plan.request.budget, plan.request.currency)}</strong><span className="stat-foot"><span className="trend down"><ArrowDownRight size={14} /> 0%</span> spend tracked so far</span></article>
       <article className="stat-card"><div className="stat-icon teal"><UsersRound size={17} /></div><span className="stat-label">GUESTS INVITED</span><strong className="stat-value">{plan.request.guests}<small> people</small></strong><span className="stat-foot"><span className="trend up"><ArrowUpRight size={14} /> Ready</span> guest list estimate</span></article>
     </section>
 
@@ -46,10 +46,10 @@ export function OverviewView({ plan, eventCount, completed, daysUntil, formatted
       </article>
       <article className="panel budget-panel">
         <div className="panel-heading"><div><span className="panel-kicker">SPEND WITH INTENTION</span><h3>Budget overview</h3></div><button className="quiet-button" onClick={() => onNavigate("Budget planner")}><span>Details</span><span aria-hidden="true">↗</span></button></div>
-        <div className="budget-total"><strong>{formatMoney(plan.request.budget)}</strong><span>total planned</span></div>
-        <div className="budget-bar" aria-label="Budget allocation breakdown">{plan.budget.map((item) => <span key={item.category} style={{ width: `${item.amount / plan.request.budget * 100}%`, background: item.color }} title={`${item.category}: ${formatMoney(item.amount)}`} />)}</div>
-        <div className="budget-legend">{plan.budget.slice(0, 4).map((item) => <div key={item.category}><span className="legend-dot" style={{ background: item.color }} /><span>{item.category}</span><strong>{formatMoney(item.amount)}</strong></div>)}</div>
-        <div className="budget-note"><Sparkles size={15} /><span>Set aside <strong>{formatMoney(plan.budget.find((item) => item.category === "Contingency")?.amount ?? 0)}</strong> for the unexpected.</span></div>
+        <div className="budget-total"><strong>{formatMoney(plan.request.budget, plan.request.currency)}</strong><span>total planned</span></div>
+        <div className="budget-bar" aria-label="Budget allocation breakdown">{plan.budget.map((item) => <span key={item.category} style={{ width: `${item.amount / plan.request.budget * 100}%`, background: item.color }} title={`${item.category}: ${formatMoney(item.amount, plan.request.currency)}`} />)}</div>
+        <div className="budget-legend">{plan.budget.slice(0, 4).map((item) => <div key={item.category}><span className="legend-dot" style={{ background: item.color }} /><span>{item.category}</span><strong>{formatMoney(item.amount, plan.request.currency)}</strong></div>)}</div>
+        <div className="budget-note"><Sparkles size={15} /><span>Set aside <strong>{formatMoney(plan.budget.find((item) => item.category === "Contingency")?.amount ?? 0, plan.request.currency)}</strong> for the unexpected.</span></div>
       </article>
     </section>
     <section className="bottom-note"><div className="note-spark"><Sparkles size={16} /></div><p><strong>A thoughtful touch</strong><span>{plan.request.priorities.length ? `Keep ${plan.request.priorities.join(" and ").toLowerCase()} in view as your plan takes shape.` : "Add a few priorities to make every suggestion more personal."}</span></p></section>

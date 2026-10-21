@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ideaRefinementRequestSchema, ideaRequestSchema } from "@/features/planning/schema";
 import { generateEventIdeas, GeminiError } from "@/server/ai/gemini";
 import { checkIdeaRateLimit } from "@/server/security/rate-limit";
+import { readBoundedJson } from "@/server/http/read-bounded-json";
 
 export const maxDuration = 45;
 const BODY_LIMIT = 8_192;
@@ -10,20 +11,11 @@ export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > BODY_LIMIT) return NextResponse.json({ error: "Request is too large." }, { status: 413 });
 
-  let rawBody: string;
-  try {
-    rawBody = await request.text();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  const body = await readBoundedJson(request, BODY_LIMIT);
+  if (!body.ok) {
+    return NextResponse.json({ error: body.status === 413 ? "Request is too large." : "Request must contain valid JSON." }, { status: body.status });
   }
-  if (new TextEncoder().encode(rawBody).byteLength > BODY_LIMIT) return NextResponse.json({ error: "Request is too large." }, { status: 413 });
-
-  let candidate: unknown;
-  try {
-    candidate = JSON.parse(rawBody);
-  } catch {
-    return NextResponse.json({ error: "Request must contain valid JSON." }, { status: 400 });
-  }
+  const candidate = body.value;
   const containsRefinement = typeof candidate === "object" && candidate !== null &&
     ("refinement" in candidate || "currentIdeas" in candidate);
   const initialRequest = containsRefinement
