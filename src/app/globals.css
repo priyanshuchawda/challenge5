@@ -90,7 +90,7 @@ select:focus-visible {
 }
 .brand-light {
   font-weight: 400;
-  color: #79907c;
+  color: #405b46;
 }
 .workspace-label {
   margin: 45px 10px 13px;
@@ -427,14 +427,14 @@ select:focus-visible {
   padding: 5px 8px;
   border-radius: 5px;
   background: #f1f4ef;
-  color: #658067;
+  color: #405d46;
   font-size: 9px;
   font-weight: 600;
 }
 .more-button {
   border: 0;
   background: none;
-  color: #9da79d;
+  color: #536256;
   font-size: 20px;
   letter-spacing: 2px;
   line-height: 1;
@@ -449,7 +449,7 @@ select:focus-visible {
 .event-meta {
   display: flex;
   gap: 17px;
-  color: #869187;
+  color: #4c5d50;
   font-size: 10px;
 }
 .event-meta span {
@@ -494,7 +494,7 @@ select:focus-visible {
 }
 .guest-pile > span.guest-more {
   background: #f1f3ee;
-  color: #718075;
+  color: #536256;
 }
 .guest-pile small {
   font-size: 9px;
@@ -638,7 +638,7 @@ select:focus-visible {
   font:
     10px Arial,
     sans-serif;
-  color: #9ba39b;
+  color: #536256;
   letter-spacing: 0;
 }
 .stat-money {
@@ -660,10 +660,10 @@ select:focus-visible {
   font-weight: 600;
 }
 .trend.up {
-  color: #71916f;
+  color: #47694a;
 }
 .trend.down {
-  color: #a99a70;
+  color: #735f35;
 }
 .lower-grid {
   display: grid;
@@ -686,7 +686,7 @@ select:focus-visible {
 }
 .panel-kicker {
   display: block;
-  color: #a3aaa1;
+  color: #46564a;
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -698,10 +698,17 @@ select:focus-visible {
   margin: 6px 0 0;
   color: #34493a;
 }
+.panel-title {
+  margin: 0;
+  font:
+    500 18px Georgia,
+    serif;
+  color: #405742;
+}
 .quiet-button {
   border: 0;
   background: none;
-  color: #728572;
+  color: #405a45;
   font-size: 9px;
   font-weight: 600;
   padding: 3px 1px;
@@ -787,19 +794,19 @@ select:focus-visible {
 }
 .priority-high {
   background: #f8edeb;
-  color: #ac7169;
+  color: #81473f;
 }
 .priority-medium {
   background: #f9f2e7;
-  color: #a9844f;
+  color: #765a2d;
 }
 .priority-low {
   background: #eef2ec;
-  color: #789073;
+  color: #4f674a;
 }
 .task-done .task-copy strong {
   text-decoration: line-through;
-  color: #9ca69c;
+  color: #59675c;
 }
 .add-task {
   width: 100%;
@@ -812,7 +819,7 @@ select:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #778b79;
+  color: #4c604e;
   font-size: 9px;
 }
 .add-task:hover {
@@ -832,7 +839,7 @@ select:focus-visible {
 }
 .budget-total span {
   font-size: 9px;
-  color: #a1aaa1;
+  color: #536256;
 }
 .budget-bar {
   height: 9px;
@@ -858,7 +865,7 @@ select:focus-visible {
   grid-template-columns: 8px 1fr auto;
   align-items: center;
   gap: 6px;
-  color: #8e988e;
+  color: #56645a;
   font-size: 9px;
   min-width: 0;
 }
@@ -880,14 +887,14 @@ select:focus-visible {
   padding: 9px 10px;
   border-radius: 6px;
   background: #f7f8f2;
-  color: #7f8e78;
+  color: #52614e;
   font-size: 9px;
 }
 .budget-note svg {
-  color: #a18a59;
+  color: #695b36;
 }
 .budget-note strong {
-  color: #617354;
+  color: #52614e;
 }
 .bottom-note {
   margin-top: 14px;
@@ -928,7 +935,7 @@ select:focus-visible {
   background: none;
   font-size: 9px;
   font-weight: 600;
-  color: #7d8b71;
+  color: #405a45;
   white-space: nowrap;
 }
 .bottom-note button span {
@@ -1128,7 +1135,7 @@ select:focus-visible {
 }
 .budget-detail-row > small {
   font-size: 9px;
-  color: #8d998e;
+  color: #536256;
   text-align: right;
 }
 .budget-detail-track {
@@ -1195,7 +1202,7 @@ select:focus-visible {
 }
 .idea-card p {
   margin: 0;
-  color: #879188;
+  color: #56645a;
   font-size: 10px;
   line-height: 1.65;
 }
@@ -1649,7 +1656,7 @@ select:focus-visible {
 }
 .budget-summary span {
   font-size: 9px;
-  color: #728075;
+  color: #536256;
 }
 .budget-summary strong {
   font:
@@ -1694,7 +1701,7 @@ select:focus-visible {
 }
 .expense-table th {
   font-size: 9px;
-  color: #7c897d;
+  color: #536256;
   background: #fafbf9;
 }
 .expense-table td {
@@ -1727,7 +1734,13 @@ select:focus-visible {
   font:
     600 9px Arial,
     sans-serif;
-  color: #748477;
+  color: #536256;
+}
+.schedule-caption {
+  margin: 6px 0 0;
+  color: #536256;
+  font-size: 10px;
+  line-height: 1.5;
 }
 .timeline-list,
 .vendor-list {
@@ -1778,7 +1791,7 @@ select:focus-visible {
 .timeline-copy small,
 .timeline-task time {
   font-size: 9px;
-  color: #778578;
+  color: #536256;
 }
 .timeline-task time {
   text-align: right;
@@ -1807,7 +1820,7 @@ select:focus-visible {
 }
 .vendor-card > p {
   margin: 8px 0;
-  color: #738075;
+  color: #536256;
   font-size: 9px;
   line-height: 1.55;
 }
@@ -1817,7 +1830,7 @@ select:focus-visible {
   gap: 8px;
   align-items: center;
   font-size: 9px;
-  color: #718072;
+  color: #536256;
 }
 .vendor-status-label select {
   height: 32px;
@@ -1852,12 +1865,10 @@ select:focus-visible {
 .workspace-label,
 .side-label,
 .stat-label,
-.panel-kicker,
 .photo-tag,
 .guest-pile small,
 .event-list-copy span,
 .detail-intro,
-.idea-card p,
 .idea-disclaimer,
 .profile-copy small,
 .help-card p,
@@ -1866,31 +1877,24 @@ select:focus-visible {
 .stat-foot,
 .countdown small,
 .task-date,
-.budget-legend > div,
 .bottom-note p span,
-.search-box input::placeholder,
 .privacy-note,
 .progress-ring small,
-.event-form label small,
-.budget-total span,
-.budget-note,
-.budget-note strong {
+.event-form label small {
   color: #46564a;
 }
 .event-type,
 .text-button,
-.quiet-button,
 .help-card button,
-.bottom-note button,
 .countdown,
 .countdown span {
   color: #344f3c;
 }
-.brand-light {
-  color: #405b46;
-}
 .topbar kbd {
   color: #536256;
+}
+.search-box input::placeholder {
+  color: #59675d;
 }
 .event-type {
   color: #405d46;
@@ -1899,9 +1903,6 @@ select:focus-visible {
   color: #536256;
 }
 .event-meta {
-  color: #4c5d50;
-}
-.guest-more {
   color: #4c5d50;
 }
 .stat-foot .trend.up {
@@ -1927,19 +1928,6 @@ select:focus-visible {
 }
 .add-task {
   color: #4c604e;
-}
-.budget-legend > div {
-  color: #56645a;
-}
-.idea-card p {
-  color: #56645a;
-}
-.panel-kicker {
-  color: #46564a;
-}
-.side-label,
-.stat-label {
-  color: #46564a;
 }
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -1991,12 +1979,6 @@ select:focus-visible {
   }
   .run-of-show-table-wrap {
     overflow: auto;
-  }
-  .schedule-caption {
-    margin: 6px 0 0;
-    color: #738075;
-    font-size: 10px;
-    line-height: 1.5;
   }
 }
 @media print {
@@ -2086,115 +2068,4 @@ select:focus-visible {
     border: 1px solid #900 !important;
     color: #600 !important;
   }
-}
-
-/* WCAG AA contrast for secondary labels and status text. */
-.brand-light {
-  color: #405b46;
-}
-.topbar kbd,
-.search-box input::placeholder {
-  color: #59675d;
-}
-.event-type {
-  color: #405d46;
-}
-.more-button {
-  color: #536256;
-}
-.event-meta {
-  color: #4c5d50;
-}
-.guest-more {
-  color: #4c5d50;
-}
-.stat-foot .trend.up {
-  color: #47694a;
-}
-.trend.down {
-  color: #735f35;
-}
-.stat-value small {
-  color: #536256;
-}
-.priority-high {
-  color: #81473f;
-}
-.priority-medium {
-  color: #765a2d;
-}
-.priority-low {
-  color: #4f674a;
-}
-.task-done .task-copy strong {
-  color: #59675c;
-}
-.add-task {
-  color: #4c604e;
-}
-.budget-total span {
-  color: #536256;
-}
-.budget-note,
-.budget-note strong {
-  color: #52614e;
-}
-.budget-note svg {
-  color: #695b36;
-}
-.bottom-note button,
-.quiet-button {
-  color: #405a45;
-}
-
-.guest-pile > span.guest-more {
-  color: #536256;
-  background: #f1f3ee;
-}
-
-.budget-summary span,
-.budget-detail-row > small,
-.expense-table th {
-  color: #536256;
-}
-.panel-title {
-  font:
-    500 18px Georgia,
-    serif;
-  color: #405742;
-  margin: 0;
-}
-.budget-summary span,
-.budget-detail-row > small,
-.expense-table th {
-  color: #536256 !important;
-}
-
-.timeline-copy small,
-.timeline-task time,
-.vendor-card > p,
-.vendor-status-label {
-  color: #536256;
-}
-.timeline-task .timeline-copy small,
-.timeline-task time,
-.vendor-card > p,
-.vendor-status-label {
-  color: #536256 !important;
-}
-
-.brand-light {
-  color: #405b46 !important;
-}
-.topbar kbd {
-  color: #536256 !important;
-}
-.panel-kicker {
-  color: #46564a !important;
-}
-.workflow-section > h4 > span {
-  color: #536256 !important;
-}
-.schedule-caption {
-  color: #536256 !important;
 }
