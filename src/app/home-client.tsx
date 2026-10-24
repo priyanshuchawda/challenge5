@@ -28,6 +28,23 @@ import { AIPlanPanel } from "@/features/planning/components/AIPlanPanel";
 import { useEventIdeas } from "@/features/planning/hooks/useEventIdeas";
 import { usePlannerWorkspace } from "@/features/planning/hooks/usePlannerWorkspace";
 
+type PlannerView =
+  | "Overview"
+  | "My events"
+  | "AI planning"
+  | "Budget planner"
+  | "Timeline & vendors"
+  | "Inspiration";
+
+const navigation = [
+  { label: "Overview", icon: LayoutDashboard },
+  { label: "My events", icon: CalendarDays },
+  { label: "AI planning", icon: Sparkles },
+  { label: "Budget planner", icon: WalletCards },
+  { label: "Timeline & vendors", icon: Store },
+  { label: "Inspiration", icon: Lightbulb },
+] as const;
+
 const today = new Date();
 
 export default function Home() {
@@ -44,7 +61,7 @@ export default function Home() {
     requestIdeas,
     reset: resetIdeas,
   } = ideasState;
-  const [view, setView] = useState("Overview");
+  const [view, setView] = useState<PlannerView>("Overview");
   const [modalOpen, setModalOpen] = useState(false);
   const [planLanguage, setPlanLanguage] = useState("English");
   const [expenseModal, setExpenseModal] = useState(false);
@@ -171,14 +188,7 @@ export default function Home() {
         </a>
         <div className="workspace-label">WORKSPACE</div>
         <nav className="main-nav">
-          {[
-            { label: "Overview", icon: LayoutDashboard },
-            { label: "My events", icon: CalendarDays },
-            { label: "AI planning", icon: Sparkles },
-            { label: "Budget planner", icon: WalletCards },
-            { label: "Timeline & vendors", icon: Store },
-            { label: "Inspiration", icon: Lightbulb },
-          ].map(({ label, icon: Icon }) => (
+          {navigation.map(({ label, icon: Icon }) => (
             <button
               key={label}
               title={label}
