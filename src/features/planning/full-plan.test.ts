@@ -94,4 +94,15 @@ describe("materializeFullPlan", () => {
     };
     expect(fullPlanDraftSchema.safeParse(duplicate).success).toBe(false);
   });
+
+  it("resolves equal fractional remainders consistently by input order", () => {
+    const equalWeights = fullPlanDraftSchema.parse({
+      ...draft,
+      budget: draft.budget.map((category) => ({ ...category, weight: 1 })),
+    });
+
+    const result = materializeFullPlan(request, equalWeights, "2027-01-01");
+
+    expect(result.budget.map((row) => row.amount)).toEqual([33_335, 33_334, 33_334]);
+  });
 });

@@ -1,6 +1,7 @@
 import { loadEnvConfig } from "@next/env";
 import { describe, expect, it } from "vitest";
 import { generateEventIdeas } from "./gemini";
+import { GeminiError } from "./gemini-client";
 import { generateFullPlan } from "./full-plan";
 import {
   eventIdeasSchema,
@@ -27,7 +28,24 @@ describe("live Gemini integration", () => {
       "Set GEMINI_API_KEY in .env.local before running the live smoke test",
     ).toBeTruthy();
 
-    const ideas = eventIdeasSchema.parse(await generateEventIdeas(syntheticInput));
+    let generated: Awaited<ReturnType<typeof generateEventIdeas>>;
+    try {
+      generated = await generateEventIdeas(syntheticInput);
+    } catch (error) {
+      if (error instanceof GeminiError) {
+        const cause = error.cause;
+        console.error(
+          JSON.stringify({
+            operation: "generate ideas",
+            status: error.status,
+            httpStatus: error.httpStatus,
+            causeName: cause instanceof Error ? cause.name : undefined,
+          }),
+        );
+      }
+      throw error;
+    }
+    const ideas = eventIdeasSchema.parse(generated);
     const refinedIdeas = eventIdeasSchema.parse(
       await generateEventIdeas({
         ...syntheticInput,

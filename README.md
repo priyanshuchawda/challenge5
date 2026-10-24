@@ -36,6 +36,8 @@ The optional AI assistant uses the **Google Gemini API** through server-side Nex
 - **Gemini 3.5 Flash-Lite** is the default for fast, efficient event planning.
 - **Gemini 3.8 Flash** is the bounded fallback for transient provider failures or invalid model
   output.
+- Identical concurrent AI requests share one in-flight provider call per server instance. Results
+  are not persisted in a shared cache.
 - Zod validates incoming requests and generated JSON. The application calculates budget totals and
   calendar dates before suggestions can be applied.
 
@@ -88,16 +90,18 @@ This live smoke test uses API quota. Ordinary tests do not call Gemini.
 
 ## Quality checks
 
-The current local verification run includes 101 passing unit tests, 96.30% statement coverage,
-97.43% line coverage, and 10 passing Playwright journeys. The browser suite also checks axe
-accessibility on the landing page at desktop and mobile sizes, core planner views, and security
-headers. These are measured project checks, not a claim of perfect accessibility or security.
+The current local verification run includes 110 passing unit tests, 97.07% statement coverage,
+90.13% branch coverage, 95.61% function coverage, 98.10% line coverage, and 10 passing Playwright
+journeys. The browser suite also checks axe accessibility on the landing page at desktop and mobile
+sizes, core planner views, and security headers. These are measured project checks, not a claim of
+perfect accessibility or security.
 
 ```sh
 pnpm typecheck
 pnpm lint
 pnpm format:check
 pnpm check:dead-code
+pnpm audit --prod
 pnpm test
 pnpm test:coverage
 pnpm build
@@ -108,11 +112,12 @@ pnpm test:e2e
 The suite covers deterministic planning and budget rules, runtime validation, AI provider failures
 and fallback, request-size limits, rate limiting, browser persistence, planning-view interactions,
 plan refinement and application, security headers, and accessibility checks with axe. The measured
-whole-source unit and component coverage is **96.30% statements, 87.44% branches, 94.27% functions,
-and 97.43% lines** across included `src` application files (101 tests). This excludes Next.js entry
-files and the proxy from instrumentation; the Playwright suite separately exercises the production
-app. Playwright runs against the production build. GitHub Actions are configured for manual runs;
-pushes and pull requests do not start CI while automation is paused.
+whole-source unit and component coverage is **97.07% statements, 90.13% branches, 95.61% functions,
+and 98.10% lines** across included `src` application files (110 tests). These exceed the enforced
+Vitest floors of 97% statements, 90% branches, 95% functions, and 98% lines. This excludes Next.js
+entry files and the proxy from instrumentation; the Playwright suite separately exercises the
+production app. Playwright runs against the production build. GitHub Actions are configured for
+manual runs; pushes and pull requests do not start CI while automation is paused.
 
 ## Deploy
 

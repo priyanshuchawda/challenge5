@@ -1,8 +1,11 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 
 const DEFAULT_PRIMARY_MODEL = "gemini-3.5-flash-lite";
 const DEFAULT_FALLBACK_MODEL = "gemini-3.8-flash";
 const REQUEST_TIMEOUT_MS = 20_000;
+const MAX_IN_FLIGHT_REQUESTS = 128;
+const inFlightRequests = new Map<string, Promise<unknown>>();
 
 export type GeminiErrorStatus = "unavailable" | "quota" | "invalid_output";
 
@@ -10,8 +13,9 @@ export class GeminiError extends Error {
   constructor(
     readonly status: GeminiErrorStatus,
     readonly httpStatus?: number,
+    options?: ErrorOptions,
   ) {
-    super(status);
+    super(status, options);
     this.name = "GeminiError";
   }
 }
@@ -114,7 +118,7 @@ async function requestModel<T>(
     return parseGeneratedJson(generatedText(body), request.outputSchema);
   } catch (error) {
     if (error instanceof GeminiError) throw error;
-    throw new GeminiError("unavailable");
+    throw new GeminiError("unavailable", undefined, { cause: error });
   } finally {
     clearTimeout(timeout);
   }
@@ -126,11 +130,26 @@ export async function generateGeminiJson<T>(request: GeminiJsonRequest<T>): Prom
 
   const primaryModel = process.env.GEMINI_MODEL || DEFAULT_PRIMARY_MODEL;
   const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || DEFAULT_FALLBACK_MODEL;
+  const key = createHash("sha256")
+    .update(JSON.stringify({ primaryModel, fallbackModel, request }))
+    .digest("hex");
+  const existing = inFlightRequests.get(key);
+  if (existing) return existing as Promise<T>;
 
+  const generation = (async () => {
+    try {
+      return await requestModel(primaryModel, apiKey, request);
+    } catch (error) {
+      if (!shouldUseFallback(error) || fallbackModel === primaryModel) throw error;
+      return requestModel(fallbackModel, apiKey, request);
+    }
+  })();
+
+  if (inFlightRequests.size >= MAX_IN_FLIGHT_REQUESTS) return generation;
+  inFlightRequests.set(key, generation);
   try {
-    return await requestModel(primaryModel, apiKey, request);
-  } catch (error) {
-    if (!shouldUseFallback(error) || fallbackModel === primaryModel) throw error;
-    return requestModel(fallbackModel, apiKey, request);
+    return await generation;
+  } finally {
+    if (inFlightRequests.get(key) === generation) inFlightRequests.delete(key);
   }
 }

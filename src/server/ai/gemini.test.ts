@@ -69,6 +69,63 @@ describe("Gemini planning provider", () => {
     expect(String(options.body)).toContain("Step-free access");
   });
 
+  it("shares an identical in-flight request and releases the key after completion", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          setTimeout(
+            () =>
+              resolve(
+                new Response(
+                  JSON.stringify({
+                    candidates: [{ content: { parts: [{ text: JSON.stringify(validIdeas) }] } }],
+                  }),
+                  { status: 200 },
+                ),
+              ),
+            10,
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const [first, second] = await Promise.all([
+      generateEventIdeas(input),
+      generateEventIdeas(input),
+    ]);
+
+    expect(first).toEqual(validIdeas);
+    expect(second).toEqual(validIdeas);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await generateEventIdeas(input);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("removes a rejected in-flight request so a later retry can run", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubEnv("GEMINI_MODEL", "gemini-primary-test");
+    vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-fallback-test");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 503 }))
+      .mockResolvedValueOnce(new Response("{}", { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            candidates: [{ content: { parts: [{ text: JSON.stringify(validIdeas) }] } }],
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(generateEventIdeas(input)).rejects.toMatchObject({ status: "unavailable" });
+    await expect(generateEventIdeas(input)).resolves.toEqual(validIdeas);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it("treats refinement feedback and prior suggestions as untrusted data", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(
@@ -132,6 +189,20 @@ describe("Gemini planning provider", () => {
     await expect(generateEventIdeas(input)).rejects.toMatchObject({ status: "quota" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-primary-test");
+  });
+
+  it("preserves a sanitized network cause for diagnostics while trying the fallback", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubEnv("GEMINI_MODEL", "gemini-primary-test");
+    vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-fallback-test");
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("network unavailable"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(generateEventIdeas(input)).rejects.toMatchObject({
+      status: "unavailable",
+      cause: expect.any(TypeError),
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("falls back to Flash only after a transient primary server failure", async () => {

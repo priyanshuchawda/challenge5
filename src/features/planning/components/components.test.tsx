@@ -54,6 +54,37 @@ const validIdeas: EventIdeas = {
   contingency: "Move to a confirmed indoor space if the weather changes during the day.",
 };
 
+const validFullPlanResponse = {
+  plan: {
+    summary: "A practical draft keeps accessibility, dietary needs, and spending in view.",
+    budget: ["Venue", "Food", "Activities"].map((category) => ({
+      category,
+      amount: 300,
+      tip: "Confirm the details and compare the options before making a commitment.",
+      color: "#728a67",
+      spent: 0,
+    })),
+    timeline: Array.from({ length: 5 }, (_, index) => ({
+      title: `Planning milestone ${index + 1}`,
+      dueDate: "2026-11-20",
+      priority: "Medium" as const,
+      category: "Planning",
+    })),
+    vendors: ["Venue", "Food"].map((category) => ({
+      category,
+      lookFor: "A reliable option that can support the event’s stated access requirements.",
+      questions: ["Can you confirm the details?", "What are the cancellation terms?"],
+      dueDate: "2026-11-20",
+    })),
+    ideas: Array.from({ length: 3 }, (_, index) => ({
+      area: "Accessibility",
+      title: `Thoughtful idea ${index + 1}`,
+      description: "Offer a clear, welcoming option guests can choose at their own pace.",
+      whyItFits: "This supports the stated priorities and makes participation more comfortable.",
+    })),
+  },
+};
+
 describe("planning views", () => {
   it("shows empty and populated event lists and handles create and open actions", async () => {
     const user = userEvent.setup();
@@ -186,6 +217,31 @@ describe("planning views", () => {
     expect(onToggleTask).toHaveBeenCalledOnce();
     await user.click(screen.getByRole("button", { name: "Add a task" }));
     expect(onAddTask).toHaveBeenCalledOnce();
+  });
+
+  it("shows neutral guidance when priorities and contingency are absent", () => {
+    const sparsePlan = {
+      ...plan,
+      request: { ...plan.request, priorities: [] },
+      budget: plan.budget.filter((item) => item.category !== "Contingency"),
+    };
+    render(
+      <OverviewView
+        plan={sparsePlan}
+        eventCount={1}
+        completed={0}
+        daysUntil={52}
+        formattedEventDate="Saturday, 12 December 2026"
+        onToggleTask={vi.fn()}
+        onNavigate={vi.fn()}
+        onAddTask={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText("Add a few priorities to make every suggestion more personal."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("₹0", { selector: ".budget-note strong" })).toBeInTheDocument();
   });
 
   it("edits run-of-show fields and exposes print and export actions", async () => {
@@ -352,6 +408,21 @@ describe("accessible planning dialogs", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("closes the task dialog when the user clicks its backdrop", () => {
+    const onClose = vi.fn();
+    render(
+      <TaskDialog
+        task={{ title: "", dueDate: "2026-10-24", priority: "Medium", category: "Planning" }}
+        onChange={vi.fn()}
+        onClose={onClose}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    fireEvent.mouseDown(screen.getByRole("presentation"));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it("keeps a generated plan reviewable when the request fails", async () => {
     const user = userEvent.setup();
     const onApply = vi.fn();
@@ -365,6 +436,73 @@ describe("accessible planning dialogs", () => {
     await user.click(screen.getByRole("button", { name: "Generate my full plan" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("AI unavailable");
     expect(onApply).not.toHaveBeenCalled();
+  });
+
+  it("reviews, refines, and applies a validated AI plan", async () => {
+    const user = userEvent.setup();
+    const onApply = vi.fn();
+    const onLanguageChange = vi.fn();
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(jsonResponseForComponent(validFullPlanResponse)));
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <AIPlanPanel
+        plan={plan}
+        language="English"
+        onLanguageChange={onLanguageChange}
+        onApply={onApply}
+      />,
+    );
+
+    await user.selectOptions(screen.getByLabelText("Plan language"), "Hindi");
+    await user.click(screen.getByRole("button", { name: "Generate my full plan" }));
+    expect(await screen.findByText(validFullPlanResponse.plan.summary)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("AI plan is ready to review");
+    await user.type(screen.getByLabelText("Refine this plan"), "Keep the venue budget modest");
+    await user.click(screen.getByRole("button", { name: "Refine AI plan" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Updated AI plan is ready");
+    const refineBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)) as {
+      feedback: string;
+    };
+    expect(refineBody.feedback).toBe("Keep the venue budget modest");
+    await user.click(screen.getByRole("button", { name: "Apply this plan" }));
+    expect(onApply).toHaveBeenCalledWith(validFullPlanResponse.plan);
+    expect(onLanguageChange).toHaveBeenCalledWith("Hindi");
+  });
+
+  it("uses a safe fallback for malformed provider errors and rejected fetches", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponseForComponent("unstructured error", 502))
+      .mockRejectedValueOnce("network failed");
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <AIPlanPanel plan={plan} language="English" onLanguageChange={vi.fn()} onApply={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Generate my full plan" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "AI planning is temporarily unavailable.",
+    );
+    await user.click(screen.getByRole("button", { name: "Generate my full plan" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "AI planning is temporarily unavailable.",
+    );
+  });
+
+  it("rejects a successful response that does not satisfy the plan contract", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponseForComponent({ plan: {} })));
+    render(
+      <AIPlanPanel plan={plan} language="English" onLanguageChange={vi.fn()} onApply={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Generate my full plan" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The AI response was incomplete. Your saved plan is unchanged.",
+    );
   });
 });
 
