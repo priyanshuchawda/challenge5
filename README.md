@@ -88,10 +88,10 @@ This live smoke test uses API quota. Ordinary tests do not call Gemini.
 
 ## Quality checks
 
-The current local verification run includes 99 passing unit tests, 96.01% statement coverage, 97.43%
-line coverage, and 10 passing Playwright journeys. The browser suite also checks axe accessibility
-on the landing page at desktop and mobile sizes, core planner views, and security headers. These are
-measured project checks, not a claim of perfect accessibility or security.
+The current local verification run includes 101 passing unit tests, 96.30% statement coverage,
+97.43% line coverage, and 10 passing Playwright journeys. The browser suite also checks axe
+accessibility on the landing page at desktop and mobile sizes, core planner views, and security
+headers. These are measured project checks, not a claim of perfect accessibility or security.
 
 ```sh
 pnpm typecheck
@@ -108,8 +108,8 @@ pnpm test:e2e
 The suite covers deterministic planning and budget rules, runtime validation, AI provider failures
 and fallback, request-size limits, rate limiting, browser persistence, planning-view interactions,
 plan refinement and application, security headers, and accessibility checks with axe. The measured
-whole-source unit and component coverage is **96.28% statements, 85.92% branches, 94.52% functions,
-and 97.66% lines** across included `src` application files (95 tests). This excludes Next.js entry
+whole-source unit and component coverage is **96.30% statements, 87.44% branches, 94.27% functions,
+and 97.43% lines** across included `src` application files (101 tests). This excludes Next.js entry
 files and the proxy from instrumentation; the Playwright suite separately exercises the production
 app. Playwright runs against the production build. GitHub Actions are configured for manual runs;
 pushes and pull requests do not start CI while automation is paused.

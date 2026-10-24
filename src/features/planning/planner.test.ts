@@ -57,6 +57,9 @@ describe("planning domain", () => {
 
     expect(amount(prioritized, "Food & drink")).toBeGreaterThan(amount(ordinary, "Food & drink"));
     expect(amount(prioritized, "Venue")).toBeLessThan(amount(ordinary, "Venue"));
+    expect(
+      amount(allocateBudget(1_000_000, "Wedding", ["step-free access"]), "Venue"),
+    ).toBeGreaterThan(amount(ordinary, "Venue"));
   });
 
   it("rejects unsafe budget values before allocation", () => {
@@ -70,6 +73,16 @@ describe("planning domain", () => {
     expect(plan.tasks).toHaveLength(6);
     expect(plan.tasks.every((task) => task.dueDate < request.date)).toBe(true);
     expect(plan.tasks[0]?.title).toContain("accessibility");
+  });
+
+  it("adapts task recommendations for community events and birthdays", () => {
+    const communityRequest = eventRequestSchema.parse({ ...request, type: "Community event" });
+    const birthdayRequest = eventRequestSchema.parse({ ...request, type: "Birthday" });
+
+    expect(createPlan(communityRequest, "community").tasks[2]?.title).toContain("permits");
+    expect(createPlan(birthdayRequest, "birthday").tasks[4]?.title).toBe(
+      "Draft the event day schedule",
+    );
   });
 
   it("bounds deadlines to today for near events and preserves past event dates", () => {
@@ -152,6 +165,9 @@ describe("planning domain", () => {
     if (!venue) throw new Error("Expected the default venue checklist item.");
     const updated = updateVendor(plan, venue.id, { status: "Booked", estimatedCost: 300_000 });
     expect(updated.vendors[0]).toMatchObject({ status: "Booked", estimatedCost: 300_000 });
+    expect(() => updateVendor(plan, "missing-vendor", { status: "Booked" })).toThrow(
+      "Vendor was not found.",
+    );
   });
 
   it("creates an ordered day-of schedule and validates schedule edits", () => {
@@ -165,5 +181,8 @@ describe("planning domain", () => {
     const updated = updateRunOfShowItem(plan, first.id, { time: "08:30", lead: "Coordinator" });
     expect(updated.runOfShow[0]).toMatchObject({ time: "08:30", lead: "Coordinator" });
     expect(() => updateRunOfShowItem(plan, first.id, { time: "25:00" })).toThrow();
+    expect(() => updateRunOfShowItem(plan, "missing-item", { time: "08:30" })).toThrow(
+      "Schedule item was not found.",
+    );
   });
 });

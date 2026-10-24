@@ -106,4 +106,30 @@ describe("applyAIPlan", () => {
 
     expect(() => applyAIPlan(current, { ...proposal, summary: "short" })).toThrow();
   });
+
+  it("keeps totals safe when proposed amounts are zero and vendor categories are new", () => {
+    const current = createPlan(request, "event-2");
+    const zeroBudgetProposal: FullPlanResponse["plan"] = {
+      ...proposal,
+      budget: proposal.budget.map((item) => ({ ...item, amount: 0 })),
+      vendors: [
+        ...proposal.vendors,
+        {
+          category: "Coordinator",
+          lookFor: "A coordinator who can keep the schedule accessible and on time.",
+          questions: ["How many events do you coordinate?", "Can you support access needs?"],
+          dueDate: "2027-05-01",
+        },
+      ],
+    };
+
+    const result = applyAIPlan(current, zeroBudgetProposal);
+
+    expect(result.budget.reduce((sum, item) => sum + item.amount, 0)).toBe(request.budget);
+    expect(result.vendors.at(-1)).toMatchObject({
+      category: "Coordinator",
+      status: "Researching",
+      estimatedCost: 0,
+    });
+  });
 });
