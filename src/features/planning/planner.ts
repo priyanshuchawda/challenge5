@@ -13,26 +13,85 @@ import {
   type Vendor,
 } from "./schema";
 
-const budgetTemplate = [
-  { category: "Venue", share: 0.28, color: "#728a67" },
-  { category: "Food & drink", share: 0.3, color: "#d59a65" },
-  { category: "Decor & flowers", share: 0.14, color: "#cf8291" },
-  { category: "Photography", share: 0.12, color: "#8e83bd" },
-  { category: "Music & fun", share: 0.09, color: "#6b9c9b" },
-  { category: "Contingency", share: 0.07, color: "#d2c5aa" },
-] as const;
+const budgetTemplates = {
+  Wedding: [
+    { category: "Venue", share: 0.28, color: "#728a67" },
+    { category: "Food & drink", share: 0.3, color: "#d59a65" },
+    { category: "Decor & flowers", share: 0.14, color: "#cf8291" },
+    { category: "Photography", share: 0.12, color: "#8e83bd" },
+    { category: "Music & fun", share: 0.09, color: "#6b9c9b" },
+    { category: "Contingency", share: 0.07, color: "#d2c5aa" },
+  ],
+  Birthday: [
+    { category: "Venue", share: 0.2, color: "#728a67" },
+    { category: "Food & drink", share: 0.28, color: "#d59a65" },
+    { category: "Decor & flowers", share: 0.12, color: "#cf8291" },
+    { category: "Photography", share: 0.13, color: "#8e83bd" },
+    { category: "Music & fun", share: 0.12, color: "#6b9c9b" },
+    { category: "Contingency", share: 0.15, color: "#d2c5aa" },
+  ],
+  "Community event": [
+    { category: "Venue", share: 0.2, color: "#728a67" },
+    { category: "Food & drink", share: 0.28, color: "#d59a65" },
+    { category: "Decor & flowers", share: 0.08, color: "#cf8291" },
+    { category: "Photography", share: 0.05, color: "#8e83bd" },
+    { category: "Music & fun", share: 0.12, color: "#6b9c9b" },
+    { category: "Contingency", share: 0.27, color: "#d2c5aa" },
+  ],
+} as const;
 
-export function allocateBudget(limit: number): BudgetAllocation[] {
-  const allocations = budgetTemplate.map(({ category, share, color }) => ({
-    category,
-    amount: Math.floor(limit * share),
-    color,
-    spent: 0,
-  }));
-  const remainder = limit - allocations.reduce((sum, item) => sum + item.amount, 0);
-  const contingency = allocations.find((item) => item.category === "Contingency");
-  if (contingency) contingency.amount += remainder;
-  return allocations;
+const categoryKeywords: Record<string, readonly string[]> = {
+  Venue: ["venue", "access", "accessibility", "location", "step-free"],
+  "Food & drink": ["food", "drink", "catering", "dietary", "vegetarian", "menu"],
+  "Decor & flowers": ["decor", "flowers", "theme", "design"],
+  Photography: ["photo", "photography", "video", "memory"],
+  "Music & fun": ["music", "fun", "entertainment", "activity", "activities"],
+  Contingency: ["backup", "contingency", "reserve", "weather"],
+};
+
+export function allocateBudget(
+  limit: number,
+  type: EventRequest["type"] = "Wedding",
+  priorities: string[] = [],
+): BudgetAllocation[] {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1_000_000_000) {
+    throw new RangeError("Budget must be a positive whole number within the supported limit.");
+  }
+  const template = budgetTemplates[type];
+  const priorityWords = new Set(
+    priorities
+      .join(" ")
+      .toLocaleLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter(Boolean),
+  );
+  const reserve = template.find((item) => item.category === "Contingency");
+  if (!reserve) throw new Error("Every event budget needs a contingency allocation.");
+  const reserveAmount = Math.round(limit * reserve.share);
+  const spendable = template.filter((item) => item.category !== "Contingency");
+  const weights = spendable.map(({ category, share }) => {
+    const matches = categoryKeywords[category]?.some((keyword) =>
+      keyword.split("-").every((word) => priorityWords.has(word)),
+    );
+    return share * (matches ? 1.4 : 1);
+  });
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  const available = limit - reserveAmount;
+  const rows = spendable.map((item, index) => {
+    const exact = (available * (weights[index] ?? 0)) / weightTotal;
+    const amount = Math.floor(exact);
+    return { ...item, amount, remainder: exact - amount };
+  });
+  let leftover = available - rows.reduce((sum, row) => sum + row.amount, 0);
+  const byRemainder = [...rows].sort((a, b) => b.remainder - a.remainder);
+  for (let index = 0; leftover > 0; index += 1, leftover -= 1) {
+    const row = byRemainder[index % byRemainder.length];
+    if (row) row.amount += 1;
+  }
+  return [
+    ...rows.map(({ category, color, amount }) => ({ category, color, amount, spent: 0 })),
+    { category: reserve.category, color: reserve.color, amount: reserveAmount, spent: 0 },
+  ];
 }
 
 function dateOffset(date: string, days: number): string {
@@ -41,18 +100,27 @@ function dateOffset(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
-export function createPlan(request: EventRequest, id = crypto.randomUUID()): EventPlan {
+export function createPlan(
+  request: EventRequest,
+  id = crypto.randomUUID(),
+  today = new Date().toISOString().slice(0, 10),
+): EventPlan {
   const isWedding = request.type === "Wedding";
   const isCommunity = request.type === "Community event";
   const eventDay = new Date(`${request.date}T12:00:00.000Z`);
-  const currentDay = new Date();
-  currentDay.setUTCHours(12, 0, 0, 0);
+  const currentDay = new Date(`${today}T12:00:00.000Z`);
   const daysUntilEvent = Math.max(
     1,
     Math.ceil((eventDay.getTime() - currentDay.getTime()) / 86_400_000),
   );
-  const deadline = (share: number) =>
-    dateOffset(request.date, Math.min(90, Math.max(1, Math.floor(daysUntilEvent * share))));
+  const deadline = (share: number) => {
+    if (request.date < today) return request.date;
+    const suggested = dateOffset(
+      request.date,
+      Math.min(90, Math.max(1, Math.floor(daysUntilEvent * share))),
+    );
+    return suggested < today ? today : suggested;
+  };
   const suggestions: Omit<PlanTask, "id" | "completed">[] = [
     {
       title: "Confirm venue and accessibility",
@@ -100,7 +168,7 @@ export function createPlan(request: EventRequest, id = crypto.randomUUID()): Eve
     id: `${id}-${index + 1}`,
     completed: false,
   }));
-  const budget = allocateBudget(request.budget);
+  const budget = allocateBudget(request.budget, request.type, request.priorities);
   const vendors: Vendor[] = [
     {
       id: `${id}-vendor-venue`,

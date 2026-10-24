@@ -2,7 +2,8 @@
 
 **A thoughtful workspace for planning celebrations—from the first idea to the day-of schedule.**
 
-[Open the live app](https://gatherwise-event-planner.vercel.app) ·
+[Explore GatherWise](https://gatherwise-event-planner.vercel.app) ·
+[Open the planner](https://gatherwise-event-planner.vercel.app/planner) ·
 [Read the threat model](docs/THREAT_MODEL.md)
 
 GatherWise helps people plan birthdays, weddings, and community events with a clear budget,
@@ -86,6 +87,11 @@ pnpm test:gemini:live
 This live smoke test uses API quota. Ordinary tests do not call Gemini.
 
 ## Quality checks
+
+The current local verification run includes 99 passing unit tests, 96.01% statement coverage, 97.43%
+line coverage, and 10 passing Playwright journeys. The browser suite also checks axe accessibility
+on the landing page at desktop and mobile sizes, core planner views, and security headers. These are
+measured project checks, not a claim of perfect accessibility or security.
 
 ```sh
 pnpm typecheck

@@ -2,9 +2,37 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/planner");
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+});
+
+test("landing page explains the product and routes into the planner", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Make room for the moments that matter.",
+  );
+  await expect(page.getByRole("link", { name: "Start planning" })).toHaveAttribute(
+    "href",
+    "/planner",
+  );
+  const desktopA11y = await new AxeBuilder({ page }).analyze();
+  expect(
+    desktopA11y.violations.map(({ id, nodes }) => ({
+      id,
+      nodes: nodes.map(({ target, failureSummary }) => ({ target, failureSummary })),
+    })),
+  ).toEqual([]);
+
+  await page.getByRole("link", { name: "Start planning" }).click();
+  await expect(page).toHaveURL(/\/planner$/);
+  await expect(page.getByRole("heading", { name: "Good morning, Priyanshu" })).toBeVisible();
+
+  await page.goto("/");
+  await page.setViewportSize({ width: 375, height: 812 });
+  const mobileA11y = await new AxeBuilder({ page }).analyze();
+  expect(mobileA11y.violations.map(({ id }) => id)).toEqual([]);
+  await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 375);
 });
 
 test("creates an expense, warns on overspend, and retains vendor and schedule edits", async ({

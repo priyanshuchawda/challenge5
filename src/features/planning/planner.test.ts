@@ -11,7 +11,7 @@ import {
   updateRunOfShowItem,
   updateVendor,
 } from "./planner";
-import { eventRequestSchema } from "./schema";
+import { eventRequestSchema, type BudgetAllocation } from "./schema";
 
 const request = eventRequestSchema.parse({
   name: "Maya's garden wedding",
@@ -33,11 +33,54 @@ describe("planning domain", () => {
     expect(budgetTotal(allocateBudget(1_000_003))).toBe(1_000_003);
   });
 
+  it("uses event-specific category weights and keeps the reserve explicit", () => {
+    const wedding = allocateBudget(100_001, "Wedding");
+    const birthday = allocateBudget(100_001, "Birthday");
+    const community = allocateBudget(100_001, "Community event");
+    const amount = (rows: BudgetAllocation[], category: string) =>
+      rows.find((row) => row.category === category)?.amount;
+
+    expect(budgetTotal(wedding)).toBe(100_001);
+    expect(budgetTotal(birthday)).toBe(100_001);
+    expect(budgetTotal(community)).toBe(100_001);
+    expect(amount(wedding, "Contingency")).toBe(7_000);
+    expect(amount(birthday, "Contingency")).toBe(15_000);
+    expect(amount(community, "Contingency")).toBe(27_000);
+    expect(amount(community, "Photography")).toBeLessThan(amount(wedding, "Photography") ?? 0);
+  });
+
+  it("allocates a larger share to a matching priority", () => {
+    const ordinary = allocateBudget(1_000_000, "Wedding");
+    const prioritized = allocateBudget(1_000_000, "Wedding", ["Vegetarian menu"]);
+    const amount = (rows: BudgetAllocation[], category: string) =>
+      rows.find((row) => row.category === category)?.amount ?? 0;
+
+    expect(amount(prioritized, "Food & drink")).toBeGreaterThan(amount(ordinary, "Food & drink"));
+    expect(amount(prioritized, "Venue")).toBeLessThan(amount(ordinary, "Venue"));
+  });
+
+  it("rejects unsafe budget values before allocation", () => {
+    for (const invalid of [0, -1, 1.25, Number.MAX_SAFE_INTEGER + 1, 1_000_000_001]) {
+      expect(() => allocateBudget(invalid)).toThrow(RangeError);
+    }
+  });
+
   it("creates actionable tasks with deadlines before the event date", () => {
     const plan = createPlan(request, "test-event");
     expect(plan.tasks).toHaveLength(6);
     expect(plan.tasks.every((task) => task.dueDate < request.date)).toBe(true);
     expect(plan.tasks[0]?.title).toContain("accessibility");
+  });
+
+  it("bounds deadlines to today for near events and preserves past event dates", () => {
+    const nearEvent = eventRequestSchema.parse({ ...request, date: "2026-10-28" });
+    const upcoming = createPlan(nearEvent, "near-event", "2026-10-24");
+    expect(upcoming.tasks.every((task) => task.dueDate >= "2026-10-24")).toBe(true);
+    expect(upcoming.tasks.every((task) => task.dueDate <= nearEvent.date)).toBe(true);
+
+    const pastEvent = eventRequestSchema.parse({ ...request, date: "2026-10-20" });
+    const historical = createPlan(pastEvent, "past-event", "2026-10-24");
+    expect(historical.tasks.every((task) => task.dueDate === pastEvent.date)).toBe(true);
   });
 
   it("counts task completion deterministically", () => {

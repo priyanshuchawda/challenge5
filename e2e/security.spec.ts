@@ -9,7 +9,7 @@ test("serves the app with a per-response CSP nonce and no browser policy violati
       policyErrors.push(message.text());
   });
 
-  const response = await page.goto("/");
+  const response = await page.goto("/planner");
   const policy = response?.headers()["content-security-policy"] ?? "";
 
   expect(response?.status()).toBe(200);
