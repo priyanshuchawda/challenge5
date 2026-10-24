@@ -2,6 +2,8 @@
 
 **A thoughtful workspace for planning celebrations—from the first idea to the day-of schedule.**
 
+[![Quality checks](https://github.com/priyanshuchawda/challenge5/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/priyanshuchawda/challenge5/actions/workflows/quality.yml)
+
 [Explore GatherWise](https://gatherwise-event-planner.vercel.app) ·
 [Open the planner](https://gatherwise-event-planner.vercel.app/planner) ·
 [Read the threat model](docs/THREAT_MODEL.md)
@@ -91,10 +93,14 @@ This live smoke test uses API quota. Ordinary tests do not call Gemini.
 ## Quality checks
 
 The current local verification run includes 110 passing unit tests, 97.07% statement coverage,
-90.13% branch coverage, 95.61% function coverage, 98.10% line coverage, and 10 passing Playwright
+90.13% branch coverage, 95.61% function coverage, 98.11% line coverage, and 10 passing Playwright
 journeys. The browser suite also checks axe accessibility on the landing page at desktop and mobile
 sizes, core planner views, and security headers. These are measured project checks, not a claim of
 perfect accessibility or security.
+
+GitHub Actions runs these checks on pushes and pull requests targeting `main`, and can also be
+started manually. CI uses no Gemini or Upstash secrets: unit tests use controlled provider doubles,
+and the production build/browser suite runs without live provider calls.
 
 ```sh
 pnpm typecheck
@@ -113,11 +119,10 @@ The suite covers deterministic planning and budget rules, runtime validation, AI
 and fallback, request-size limits, rate limiting, browser persistence, planning-view interactions,
 plan refinement and application, security headers, and accessibility checks with axe. The measured
 whole-source unit and component coverage is **97.07% statements, 90.13% branches, 95.61% functions,
-and 98.10% lines** across included `src` application files (110 tests). These exceed the enforced
+and 98.11% lines** across included `src` application files (110 tests). These exceed the enforced
 Vitest floors of 97% statements, 90% branches, 95% functions, and 98% lines. This excludes Next.js
 entry files and the proxy from instrumentation; the Playwright suite separately exercises the
-production app. Playwright runs against the production build. GitHub Actions are configured for
-manual runs; pushes and pull requests do not start CI while automation is paused.
+production app. Playwright runs against the production build.
 
 ## Deploy
 
