@@ -93,11 +93,14 @@ This live smoke test uses API quota. Ordinary tests do not call Gemini.
 
 ## Quality checks
 
-The current local verification run includes 113 passing unit tests, 97.11% statement coverage,
-90.59% branch coverage, 95.78% function coverage, 98.13% line coverage, and 10 passing Playwright
-journeys. The browser suite also checks axe accessibility on the landing page at desktop and mobile
-sizes, core planner views, and security headers. These are measured project checks, not a claim of
-perfect accessibility or security.
+The current local verification run includes 120 passing unit and component tests, 97.94% statement
+coverage, 93.34% branch coverage, 95.78% function coverage, 98.13% line coverage, and 10 passing
+Playwright journeys. The browser suite also checks axe accessibility on the landing page at desktop
+and mobile sizes, core planner views, and security headers. These are measured project checks, not a
+claim of perfect accessibility or security.
+
+The optional live Gemini suite also passed both smoke tests with synthetic inputs on 2026-10-31. It
+uses API quota and stays separate from ordinary tests and CI.
 
 GitHub Actions runs these checks on pushes and pull requests targeting `main`, and can also be
 started manually. CI uses no Gemini or Upstash secrets: unit tests use controlled provider doubles,
@@ -128,7 +131,7 @@ reproduction steps.
 
 | Criterion         | Implementation evidence                                                                                                                      | Where to verify                                                                      |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Code quality      | Strict TypeScript, runtime schemas, domain/UI separation, deterministic core logic, dead-code and formatting gates.                          | [Architecture](docs/ARCHITECTURE.md), `src/features/planning/`, GitHub Actions       |
+| Code quality      | Strict TypeScript, runtime schemas, focused domain/UI modules, deterministic core logic, dead-code and formatting gates.                     | [Architecture](docs/ARCHITECTURE.md), `src/features/planning/`, GitHub Actions       |
 | Security          | Server-only Gemini credentials, bounded requests, output validation, rate limiting, CSP/security headers, scoped threat model.               | [Threat model](docs/THREAT_MODEL.md), `src/server/`, `src/proxy.ts`                  |
 | Efficiency        | Bounded provider calls and output, duplicate-request coalescing, shared production rate limits, cached CI dependencies.                      | `src/server/ai/`, `src/server/security/`, `.github/workflows/quality.yml`            |
 | Testing           | Unit/component coverage thresholds, production-build Playwright journeys, provider failure cases, CI on pushes and pull requests.            | [Testing](docs/TESTING.md), `src/**/*.test.ts*`, `e2e/`                              |

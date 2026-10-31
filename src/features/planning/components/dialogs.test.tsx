@@ -14,6 +14,14 @@ import { AIPlanPanel } from "./AIPlanPanel";
 import { EventFormDialog } from "./EventFormDialog";
 import { ExpenseDialog } from "./ExpenseDialog";
 import { TaskDialog } from "./TaskDialog";
+import { useModalDialog } from "./useModalDialog";
+
+function EmptyFocusableDialog() {
+  const { dialogRef, handleKeyDown } = useModalDialog(vi.fn());
+  return (
+    <section ref={dialogRef} role="dialog" aria-label="Empty dialog" onKeyDown={handleKeyDown} />
+  );
+}
 
 afterEach(() => {
   cleanup();
@@ -67,8 +75,50 @@ describe("accessible planning dialogs", () => {
     expect(onChange).toHaveBeenCalled();
     fireEvent.submit(requireForm(dialog));
     expect(onSubmit).toHaveBeenCalledOnce();
+    within(dialog).getByLabelText("Event name").focus();
+    const tabEvent = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    dialog.dispatchEvent(tabEvent);
+    expect(tabEvent.defaultPrevented).toBe(false);
     fireEvent.keyDown(dialog, { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("closes the event form only when the backdrop itself is clicked", () => {
+    const onClose = vi.fn();
+    render(
+      <EventFormDialog
+        form={{
+          name: "",
+          type: "Wedding",
+          date: "2027-06-12",
+          guests: "80",
+          budget: "1200000",
+          currency: "INR",
+          location: "Pune",
+          priorities: "",
+        }}
+        error=""
+        onChange={vi.fn()}
+        onClose={onClose}
+        onSubmit={vi.fn()}
+      />,
+    );
+    const backdrop = screen.getByRole("presentation");
+
+    fireEvent.mouseDown(within(backdrop).getByRole("dialog"));
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.mouseDown(backdrop);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("does not trap Tab when a dialog has no focusable controls", () => {
+    render(<EmptyFocusableDialog />);
+    const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+
+    screen.getByRole("dialog", { name: "Empty dialog" }).dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
   });
 
   it("edits a task and traps keyboard focus at the dialog boundary", async () => {

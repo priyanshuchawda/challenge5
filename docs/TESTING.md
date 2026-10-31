@@ -25,16 +25,18 @@ To explicitly exercise a configured Gemini API key with synthetic event details:
 pnpm test:gemini:live
 ```
 
-This live smoke test is excluded from normal Vitest runs and CI.
+This live smoke test is excluded from normal Vitest runs and CI. Both live Gemini smoke tests passed
+on 2026-10-31 with synthetic event details. This confirms current connectivity and schema
+compatibility; it does not guarantee future provider availability or quota.
 
 ## Coverage and scope
 
-On 2026-10-31, Vitest reported 113 passing tests and:
+On 2026-10-31, Vitest reported 120 passing tests and:
 
 | Measure    | Result | Enforced minimum |
 | ---------- | -----: | ---------------: |
-| Statements | 97.11% |              97% |
-| Branches   | 90.59% |              90% |
+| Statements | 97.94% |              97% |
+| Branches   | 93.34% |              93% |
 | Functions  | 95.78% |              95% |
 | Lines      | 98.13% |              98% |
 

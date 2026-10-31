@@ -14,7 +14,7 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["**/*.test.{ts,tsx}", "src/app/layout.tsx", "src/app/page.tsx", "src/proxy.ts"],
       reporter: ["text", "html"],
-      thresholds: { statements: 97, branches: 90, functions: 95, lines: 98 },
+      thresholds: { statements: 97, branches: 93, functions: 95, lines: 98 },
     },
   },
 });

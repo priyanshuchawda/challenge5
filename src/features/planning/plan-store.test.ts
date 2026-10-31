@@ -47,6 +47,14 @@ describe("local plan storage boundary", () => {
     expect(readPlans(JSON.stringify([{ ...plan, budget: [{ amount: -2 }] }]))).toEqual([]);
     expect(readPlans(null)).toEqual([]);
   });
+
+  it("rejects mixed legacy arrays and invalid legacy budget fields safely", () => {
+    expect(
+      readPlans(JSON.stringify([null, "not a plan", { ...plan, budget: [null, "bad"] }])),
+    ).toEqual([]);
+    expect(readPlans(JSON.stringify([{ ...plan, budget: null }]))).toEqual([]);
+    expect(readPlans(JSON.stringify({ plans: [plan] }))).toEqual([]);
+  });
 });
 
 describe("browser storage adapter", () => {

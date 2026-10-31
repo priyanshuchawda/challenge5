@@ -103,6 +103,34 @@ describe("Gemini planning provider", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("continues provider calls when the in-flight deduplication registry is at capacity", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const pendingResponses: Array<(response: Response) => void> = [];
+    const fetchMock = vi.fn(
+      () => new Promise<Response>((resolve) => pendingResponses.push(resolve)),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const requests = Array.from({ length: 129 }, (_, index) =>
+      generateEventIdeas({ ...input, guests: index + 1, location: `Pune ${index}` }),
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(129);
+    expect(pendingResponses).toHaveLength(129);
+    for (const resolve of pendingResponses) {
+      resolve(
+        new Response(
+          JSON.stringify({
+            candidates: [{ content: { parts: [{ text: JSON.stringify(validIdeas) }] } }],
+          }),
+          { status: 200 },
+        ),
+      );
+    }
+
+    await expect(Promise.all(requests)).resolves.toHaveLength(129);
+  });
+
   it("removes a rejected in-flight request so a later retry can run", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
     vi.stubEnv("GEMINI_MODEL", "gemini-primary-test");
