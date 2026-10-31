@@ -56,6 +56,21 @@ describe("AI request limits", () => {
     await expect(checkIdeaRateLimit(caller)).resolves.toEqual({ allowed: true });
   });
 
+  it("uses the same anonymous identity for missing and blank proxy headers", async () => {
+    const blankAddress = new Request("http://localhost/api/ideas", {
+      headers: { "x-real-ip": "   " },
+    });
+    const missingAddress = new Request("http://localhost/api/ideas");
+
+    await expect(checkIdeaRateLimit(blankAddress)).resolves.toEqual({ allowed: true });
+    await expect(checkIdeaRateLimit(blankAddress)).resolves.toEqual({ allowed: true });
+    await expect(checkIdeaRateLimit(blankAddress)).resolves.toEqual({ allowed: true });
+    const blocked = await checkIdeaRateLimit(missingAddress);
+    expect(blocked).toMatchObject({ allowed: false });
+    if (blocked.allowed) throw new Error("The shared anonymous identity should be rate limited.");
+    if ("retryAfter" in blocked) expect(blocked.retryAfter).toBeGreaterThan(0);
+  });
+
   it("fails closed when production shared-limit credentials are missing", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("UPSTASH_REDIS_REST_URL", "");

@@ -31,12 +31,12 @@ compatibility; it does not guarantee future provider availability or quota.
 
 ## Coverage and scope
 
-On 2026-11-01, Vitest reported 120 passing tests and:
+On 2026-11-01, Vitest reported 125 passing tests and:
 
 | Measure    | Result | Enforced minimum |
 | ---------- | -----: | ---------------: |
 | Statements | 97.94% |              97% |
-| Branches   | 93.79% |              93% |
+| Branches   | 95.40% |              93% |
 | Functions  | 95.78% |              95% |
 | Lines      | 98.14% |              98% |
 

@@ -93,8 +93,8 @@ This live smoke test uses API quota. Ordinary tests do not call Gemini.
 
 ## Quality checks
 
-The latest local verification run (2026-11-01) includes 120 passing unit and component tests, 97.94%
-statement coverage, 93.79% branch coverage, 95.78% function coverage, 98.14% line coverage, and 10
+The latest local verification run (2026-11-01) includes 125 passing unit and component tests, 97.94%
+statement coverage, 95.40% branch coverage, 95.78% function coverage, 98.14% line coverage, and 10
 passing Playwright journeys. Type-aware strict TypeScript ESLint rules check the application and
 test code for unsafe values and problematic patterns. The browser suite also checks axe
 accessibility on planner views at desktop and mobile sizes, plus security headers. These are

@@ -140,6 +140,22 @@ describe("POST /api/plan", () => {
     expect(mocks.checkIdeaRateLimit).not.toHaveBeenCalled();
   });
 
+  it("rejects an oversized streamed body even when content-length is absent", async () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(24_577));
+        controller.close();
+      },
+    });
+    const streamedRequest = { headers: new Headers(), body } as Request;
+
+    const response = await POST(streamedRequest);
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({ error: "Request is too large." });
+    expect(mocks.checkIdeaRateLimit).not.toHaveBeenCalled();
+  });
+
   it("returns a controlled response when request body reading fails", async () => {
     const unreadableRequest = {
       headers: new Headers(),
@@ -168,6 +184,7 @@ describe("POST /api/plan", () => {
     [new GeminiError("quota"), 503],
     [new GeminiError("invalid_output"), 502],
     [new Error("private provider details"), 503],
+    [null, 503],
   ])("maps provider failure to safe HTTP status", async (error, status) => {
     mocks.generateFullPlan.mockRejectedValue(error);
     const response = await POST(request(JSON.stringify(validRequest)));

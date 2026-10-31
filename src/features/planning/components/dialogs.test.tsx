@@ -12,8 +12,10 @@ import {
 } from "../../../../tests/fixtures/planning-components";
 import { fullPlanRefinementRequestSchema } from "../schema";
 import { AIPlanPanel } from "./AIPlanPanel";
+import { BudgetPlannerView } from "./BudgetPlannerView";
 import { EventFormDialog } from "./EventFormDialog";
 import { ExpenseDialog } from "./ExpenseDialog";
+import { InspirationView } from "./InspirationView";
 import { TaskDialog } from "./TaskDialog";
 import { useModalDialog } from "./useModalDialog";
 
@@ -30,6 +32,44 @@ afterEach(() => {
 });
 
 describe("accessible planning dialogs", () => {
+  it("shows empty expenses and zero-value budget rows without invalid percentages", () => {
+    const emptyPlan = {
+      ...plan,
+      request: { ...plan.request, priorities: [] },
+      budget: plan.budget.map((item, index) =>
+        index === 0 ? { ...item, amount: 0, spent: 0 } : item,
+      ),
+      expenses: [],
+    };
+
+    render(<BudgetPlannerView plan={emptyPlan} spent={0} remaining={0} onAddExpense={vi.fn()} />);
+
+    const venueRow = screen.getByText("Venue").closest(".budget-detail-row");
+    if (!(venueRow instanceof HTMLElement)) throw new Error("Expected a budget row for the venue.");
+    expect(within(venueRow).getByText("0%")).toBeInTheDocument();
+    expect(screen.getByText(/No expenses yet/)).toBeInTheDocument();
+    expect(screen.getByText("event priorities")).toBeInTheDocument();
+  });
+
+  it("explains how to collect access needs when no priorities have been entered", () => {
+    const emptyPriorityPlan = { ...plan, request: { ...plan.request, priorities: [] } };
+
+    render(
+      <InspirationView
+        plan={emptyPriorityPlan}
+        ideas={null}
+        isLoading={false}
+        error=""
+        refinement=""
+        onRefinementChange={vi.fn()}
+        onAskGemini={vi.fn()}
+        onRefine={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Ask guests about access and dietary needs early/)).toBeInTheDocument();
+  });
+
   it("validates and submits every event field and closes on escape", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
