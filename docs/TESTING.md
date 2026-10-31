@@ -35,9 +35,9 @@ On 2026-11-01, Vitest reported 126 passing tests and:
 
 | Measure    | Result | Enforced minimum |
 | ---------- | -----: | ---------------: |
-| Statements | 97.98% |              97% |
-| Branches   | 95.40% |              93% |
-| Functions  | 95.96% |              95% |
+| Statements | 97.98% |            97.5% |
+| Branches   | 95.40% |              95% |
+| Functions  | 95.96% |            95.5% |
 | Lines      | 98.18% |              98% |
 
 Coverage includes application TypeScript and TSX modules while excluding test files and Next.js
