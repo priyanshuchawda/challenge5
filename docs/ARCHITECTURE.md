@@ -25,20 +25,25 @@ flowchart TD
 
 ## Module responsibilities
 
-| Area                                          | Responsibility                                                                              |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `src/app/`                                    | Route entry points, global application composition, and workspace shell components.         |
-| `src/app/styles/`                             | Ordered, feature-focused CSS layers imported by the global stylesheet entry point.          |
-| `src/features/planning/schema.ts`             | Runtime schemas and inferred domain types shared by browser and server code.                |
-| `src/features/planning/budget.ts`             | Integer budget allocation and priority weighting.                                           |
-| `src/features/planning/plan-factory.ts`       | Initial plan, task, vendor, and run-of-show creation.                                       |
-| `src/features/planning/plan-operations.ts`    | Validated task/expense/vendor/schedule edits and deterministic totals.                      |
-| `src/features/planning/planner.ts`            | Stable domain export barrel for existing application callers.                               |
-| `src/features/planning/hooks/`                | Browser persistence lifecycle, workspace actions, and cancellable AI requests.              |
-| `src/server/ai/`                              | Gemini configuration, model fallback, time/output bounds, and provider response validation. |
-| `src/server/http/` and `src/server/security/` | Streaming request bounds, safe HTTP responses, and rate-limit integration.                  |
-| `src/proxy.ts`                                | Per-response CSP nonce and baseline response security headers.                              |
-| `e2e/`                                        | Production-build browser journeys, security headers, and automated accessibility checks.    |
+| Area                                               | Responsibility                                                                              |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `src/app/`                                         | Route entry points, global application composition, and workspace shell components.         |
+| `src/app/styles/`                                  | Ordered, feature-focused CSS layers imported by the global stylesheet entry point.          |
+| `src/features/planning/event-schema.ts`            | Event, task, expense, vendor, budget, and schedule contracts.                               |
+| `src/features/planning/plan-schema.ts`             | Browser-persisted plan shape, validation, and inferred plan types.                          |
+| `src/features/planning/ai-schema.ts`               | Gemini request and response contracts for ideas and complete plans.                         |
+| `src/features/planning/schema.ts`                  | Stable schema export barrel for application callers.                                        |
+| `src/features/planning/budget.ts`                  | Integer budget allocation and priority weighting.                                           |
+| `src/features/planning/plan-factory.ts`            | Initial plan, task, vendor, and run-of-show creation.                                       |
+| `src/features/planning/plan-operations.ts`         | Validated task/expense/vendor/schedule edits and deterministic totals.                      |
+| `src/features/planning/planner.ts`                 | Stable domain export barrel for existing application callers.                               |
+| `src/features/planning/hooks/`                     | Browser persistence, workspace/form actions, and cancellable AI requests.                   |
+| `src/app/landing/`                                 | Focused accessible sections for the public landing page.                                    |
+| `src/features/planning/components/AIPlanPanel.tsx` | AI request state and proposal handoff to the presentation component.                        |
+| `src/server/ai/`                                   | Gemini configuration, model fallback, time/output bounds, and provider response validation. |
+| `src/server/http/` and `src/server/security/`      | Streaming request bounds, safe HTTP responses, and rate-limit integration.                  |
+| `src/proxy.ts`                                     | Per-response CSP nonce and baseline response security headers.                              |
+| `e2e/`                                             | Production-build browser journeys, security headers, and automated accessibility checks.    |
 
 ## Trust and state boundaries
 

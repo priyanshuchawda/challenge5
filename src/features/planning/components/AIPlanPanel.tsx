@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { fullPlanResponseSchema, type EventPlan, type FullPlanResponse } from "../schema";
-import { formatDate, formatMoney } from "../format";
+import { AIPlanProposal } from "./AIPlanProposal";
 
 type AIPlan = FullPlanResponse["plan"];
 
@@ -116,96 +116,18 @@ export function AIPlanPanel({ plan, language, onLanguageChange, onApply }: AIPla
         <p role="status">{result ? "Updating your plan…" : "Generating a tailored plan…"}</p>
       )}
       {result && (
-        <>
-          <div className="bottom-note">
-            <div className="note-spark">
-              <Sparkles size={16} />
-            </div>
-            <p>
-              <strong>AI planning summary</strong>
-              <span>{result.summary}</span>
-            </p>
-          </div>
-          <div className="lower-grid">
-            <section className="workflow-section" aria-labelledby="proposal-budget-title">
-              <h3 id="proposal-budget-title">Proposed budget</h3>
-              <ul>
-                {result.budget.map((item) => (
-                  <li key={item.category}>
-                    {item.category}:{" "}
-                    <strong>{formatMoney(item.amount, plan.request.currency)}</strong>
-                    {item.tip && <span> — {item.tip}</span>}
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className="workflow-section" aria-labelledby="proposal-tasks-title">
-              <h3 id="proposal-tasks-title">Planning timeline</h3>
-              <ul>
-                {result.timeline.slice(0, 8).map((task, index) => (
-                  <li key={`${task.title}-${index}`}>
-                    <strong>{task.title}</strong> · {formatDate(task.dueDate)} · {task.priority}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
-          {result.vendors.length > 0 && (
-            <section className="workflow-section" aria-labelledby="proposal-vendors-title">
-              <h3 id="proposal-vendors-title">Vendor research prompts</h3>
-              <ul>
-                {result.vendors.map((vendor, index) => (
-                  <li key={`${vendor.category}-${index}`}>
-                    <strong>{vendor.category}:</strong> {vendor.lookFor}
-                    {vendor.questions.length > 0 && ` — Ask: ${vendor.questions.join("; ")}`}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          {result.ideas.length > 0 && (
-            <section className="workflow-section" aria-labelledby="proposal-ideas-title">
-              <h3 id="proposal-ideas-title">Personalized ideas</h3>
-              <ul>
-                {result.ideas.map((idea, index) => (
-                  <li key={`${idea.area}-${index}`}>
-                    <strong>{idea.title}</strong> ({idea.area}) — {idea.description}{" "}
-                    <span>{idea.whyItFits}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          <button
-            className="primary-button"
-            onClick={() => {
-              onApply(result);
-              setMessage("AI plan applied. Completed tasks and recorded expenses were preserved.");
-            }}
-            disabled={pending}
-          >
-            Apply this plan
-          </button>
-          <div className="form-field">
-            <label htmlFor="ai-plan-feedback">Refine this plan</label>
-            <textarea
-              id="ai-plan-feedback"
-              rows={3}
-              maxLength={500}
-              value={feedback}
-              onChange={(event) => setFeedback(event.target.value)}
-              placeholder="For example: reduce decor spending and keep step-free access a priority"
-            />
-            <small>{feedback.length}/500</small>
-          </div>
-          <button
-            className="quiet-button"
-            onClick={() => void requestPlan(true)}
-            disabled={pending || feedback.trim().length < 3}
-          >
-            {pending ? "Updating…" : "Refine AI plan"}
-          </button>
-        </>
+        <AIPlanProposal
+          result={result}
+          currency={plan.request.currency}
+          feedback={feedback}
+          pending={pending}
+          onFeedbackChange={setFeedback}
+          onApply={() => {
+            onApply(result);
+            setMessage("AI plan applied. Completed tasks and recorded expenses were preserved.");
+          }}
+          onRefine={() => void requestPlan(true)}
+        />
       )}
       {message && (
         <p className="notice" role="status">

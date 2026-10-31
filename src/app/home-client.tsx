@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { Plus, Sparkles, X } from "lucide-react";
-import { eventRequestSchema, taskDraftSchema, type TaskDraft } from "@/features/planning/schema";
 import { formatDate } from "@/features/planning/format";
-import type { NewEventForm } from "@/features/planning/components/EventFormDialog";
 import { useEventIdeas } from "@/features/planning/hooks/useEventIdeas";
 import { usePlannerWorkspace } from "@/features/planning/hooks/usePlannerWorkspace";
+import { useWorkspaceForms } from "@/features/planning/hooks/useWorkspaceForms";
 import { PlannerSidebar, type PlannerView } from "./workspace/PlannerSidebar";
 import { PlannerViewContent } from "./workspace/PlannerViewContent";
 import { WorkspaceTopbar } from "./workspace/WorkspaceTopbar";
@@ -17,6 +16,12 @@ const today = new Date();
 export default function Home() {
   const [notice, setNotice] = useState("");
   const workspace = usePlannerWorkspace(setNotice);
+  const [view, setView] = useState<PlannerView>("Overview");
+  const dialogs = useWorkspaceForms({
+    actions: workspace,
+    onNotice: setNotice,
+    onEventCreated: () => setView("Overview"),
+  });
   const ideasState = useEventIdeas();
   const { plans, activePlan, activePlanStats } = workspace;
   const {
@@ -28,30 +33,7 @@ export default function Home() {
     requestIdeas,
     reset: resetIdeas,
   } = ideasState;
-  const [view, setView] = useState<PlannerView>("Overview");
-  const [modalOpen, setModalOpen] = useState(false);
   const [planLanguage, setPlanLanguage] = useState("English");
-  const [expenseModal, setExpenseModal] = useState(false);
-  const [taskModal, setTaskModal] = useState(false);
-  const [expenseCategory, setExpenseCategory] = useState("Venue");
-  const [expenseDescription, setExpenseDescription] = useState("");
-  const [expenseAmount, setExpenseAmount] = useState("");
-  const [taskDraft, setTaskDraft] = useState<TaskDraft>({
-    title: "",
-    dueDate: new Date().toISOString().slice(0, 10),
-    priority: "Medium",
-    category: "Planning",
-  });
-  const [form, setForm] = useState<NewEventForm>({
-    name: "",
-    type: "Wedding",
-    date: "2027-06-12",
-    guests: "80",
-    budget: "1200000",
-    currency: "INR",
-    location: "Pune, India",
-    priorities: "Step-free access, Vegetarian menu",
-  });
 
   const daysUntil = Math.max(
     0,
@@ -69,72 +51,6 @@ export default function Home() {
   function selectPlan(planId: string) {
     workspace.selectPlan(planId);
     resetIdeas();
-  }
-
-  function changeForm(field: keyof NewEventForm, value: string) {
-    setForm((current) => ({ ...current, [field]: value }));
-  }
-
-  function saveExpense(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      workspace.addExpenseToActivePlan({
-        category: expenseCategory,
-        description: expenseDescription,
-        amount: Number(expenseAmount),
-        date: new Date().toISOString().slice(0, 10),
-      });
-      setExpenseModal(false);
-      setExpenseDescription("");
-      setExpenseAmount("");
-      setNotice("Expense added. Budget totals are up to date.");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Check the expense details.");
-    }
-  }
-
-  function saveTask(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const parsed = taskDraftSchema.safeParse(taskDraft);
-    if (!parsed.success) {
-      setNotice(parsed.error.issues[0]?.message ?? "Check the task details.");
-      return;
-    }
-    workspace.addTaskToActivePlan(parsed.data);
-    setTaskModal(false);
-    setTaskDraft({
-      title: "",
-      dueDate: new Date().toISOString().slice(0, 10),
-      priority: "Medium",
-      category: "Planning",
-    });
-    setNotice("Task added to your plan.");
-  }
-
-  function saveEvent(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const candidate = {
-      name: form.name,
-      type: form.type,
-      date: form.date,
-      guests: Number(form.guests),
-      budget: Number(form.budget),
-      currency: form.currency,
-      location: form.location,
-      priorities: form.priorities
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-    };
-    const parsed = eventRequestSchema.safeParse(candidate);
-    if (!parsed.success) {
-      setNotice(parsed.error.issues[0]?.message ?? "Please check the event details.");
-      return;
-    }
-    workspace.createEvent(parsed.data);
-    setView("Overview");
-    setModalOpen(false);
-    setNotice(`${parsed.data.name} is ready to plan.`);
   }
 
   function askGemini(refinementText?: string) {
@@ -164,7 +80,7 @@ export default function Home() {
               className="primary-button"
               onClick={() => {
                 setNotice("");
-                setModalOpen(true);
+                dialogs.setEventOpen(true);
               }}
             >
               <Plus size={17} /> Plan an event
@@ -203,7 +119,7 @@ export default function Home() {
               );
             }}
             onSelectView={setView}
-            onCreateEvent={() => setModalOpen(true)}
+            onCreateEvent={() => dialogs.setEventOpen(true)}
             onOpenEvent={(planId) => {
               selectPlan(planId);
               setView("Overview");
@@ -212,36 +128,36 @@ export default function Home() {
             onVendorStatusChange={workspace.changeVendorStatus}
             onScheduleChange={workspace.changeScheduleItem}
             onAddExpense={() => {
-              setExpenseCategory(activePlan.budget[0]?.category ?? "Venue");
-              setExpenseModal(true);
+              dialogs.setExpenseCategory(activePlan.budget[0]?.category ?? "Venue");
+              dialogs.setExpenseOpen(true);
             }}
-            onAddTask={() => setTaskModal(true)}
+            onAddTask={() => dialogs.setTaskOpen(true)}
           />
         </div>
       </section>
 
       <WorkspaceDialogs
-        eventOpen={modalOpen}
-        eventForm={form}
+        eventOpen={dialogs.eventOpen}
+        eventForm={dialogs.eventForm}
         eventError={notice}
-        expenseOpen={expenseModal}
+        expenseOpen={dialogs.expenseOpen}
         expensePlan={activePlan}
-        expenseCategory={expenseCategory}
-        expenseDescription={expenseDescription}
-        expenseAmount={expenseAmount}
-        taskOpen={taskModal}
-        taskDraft={taskDraft}
-        onEventFormChange={changeForm}
-        onEventClose={() => setModalOpen(false)}
-        onEventSubmit={saveEvent}
-        onExpenseCategoryChange={setExpenseCategory}
-        onExpenseDescriptionChange={setExpenseDescription}
-        onExpenseAmountChange={setExpenseAmount}
-        onExpenseClose={() => setExpenseModal(false)}
-        onExpenseSubmit={saveExpense}
-        onTaskChange={(field, value) => setTaskDraft((current) => ({ ...current, [field]: value }))}
-        onTaskClose={() => setTaskModal(false)}
-        onTaskSubmit={saveTask}
+        expenseCategory={dialogs.expenseCategory}
+        expenseDescription={dialogs.expenseDescription}
+        expenseAmount={dialogs.expenseAmount}
+        taskOpen={dialogs.taskOpen}
+        taskDraft={dialogs.taskDraft}
+        onEventFormChange={dialogs.changeEventForm}
+        onEventClose={() => dialogs.setEventOpen(false)}
+        onEventSubmit={dialogs.saveEvent}
+        onExpenseCategoryChange={dialogs.setExpenseCategory}
+        onExpenseDescriptionChange={dialogs.setExpenseDescription}
+        onExpenseAmountChange={dialogs.setExpenseAmount}
+        onExpenseClose={() => dialogs.setExpenseOpen(false)}
+        onExpenseSubmit={dialogs.saveExpense}
+        onTaskChange={dialogs.changeTaskDraft}
+        onTaskClose={() => dialogs.setTaskOpen(false)}
+        onTaskSubmit={dialogs.saveTask}
       />
     </main>
   );
