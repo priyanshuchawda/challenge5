@@ -43,7 +43,9 @@ async function distributedLimit(identity: string): Promise<RateResult> {
 }
 
 export async function checkIdeaRateLimit(request: Request): Promise<RateResult> {
-  const address = request.headers.get("x-real-ip")?.trim() || "local-anonymous";
+  const forwardedAddress = request.headers.get("x-real-ip")?.trim();
+  const address =
+    forwardedAddress && forwardedAddress.length > 0 ? forwardedAddress : "local-anonymous";
   const identity = createHash("sha256").update(address).digest("hex");
 
   if (process.env.NODE_ENV === "production" && process.env.LOCAL_AI_RATE_LIMIT !== "true")

@@ -4,6 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fullPlan, jsonResponse } from "../../tests/fixtures/home-client";
+import { ideaRefinementRequestSchema } from "@/features/planning/schema";
 import Home from "./home-client";
 
 const validIdeas = {
@@ -46,7 +47,7 @@ describe("AI request and proposal flows", () => {
   it("shows provider errors without losing the saved event", async () => {
     const user = userEvent.setup();
     const fetchMock = vi
-      .fn()
+      .fn<typeof fetch>()
       .mockResolvedValue(jsonResponse({ error: "AI ideas are temporarily unavailable." }, 503));
     vi.stubGlobal("fetch", fetchMock);
     render(<Home />);
@@ -63,7 +64,7 @@ describe("AI request and proposal flows", () => {
 
   it("generates and applies a validated full plan while preserving event state", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ plan: fullPlan }));
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ plan: fullPlan }));
     vi.stubGlobal("fetch", fetchMock);
     render(<Home />);
 
@@ -136,7 +137,7 @@ describe("AI request and proposal flows", () => {
   it("sends existing suggestions for refinement and clears feedback after success", async () => {
     const user = userEvent.setup();
     const fetchMock = vi
-      .fn()
+      .fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ ideas: validIdeas }))
       .mockResolvedValueOnce(jsonResponse({ ideas: validIdeas }));
     vi.stubGlobal("fetch", fetchMock);
@@ -152,10 +153,13 @@ describe("AI request and proposal flows", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(feedback).toHaveValue(""));
-    const refinementBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)) as {
-      refinement: string;
-      currentIdeas: typeof validIdeas;
-    };
+    const requestOptions = fetchMock.mock.calls[1]?.[1];
+    if (!requestOptions || typeof requestOptions.body !== "string") {
+      throw new Error("Expected the refinement request to contain a JSON body.");
+    }
+    const refinementBody = ideaRefinementRequestSchema.parse(
+      JSON.parse(requestOptions.body) as unknown,
+    );
     expect(refinementBody.refinement).toBe("Keep the total under budget");
     expect(refinementBody.currentIdeas).toEqual(validIdeas);
   });

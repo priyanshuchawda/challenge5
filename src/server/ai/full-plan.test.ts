@@ -87,7 +87,8 @@ describe("Gemini full-plan provider", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-3.5-flash-lite");
     const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect((options.headers as Record<string, string>)["x-goog-api-key"]).toBe("test-key");
-    expect(String(options.body)).toContain("Step-free access");
+    if (typeof options.body !== "string") throw new Error("Expected a JSON request body.");
+    expect(options.body).toContain("Step-free access");
   });
 
   it("preserves the previous plan and treats refinement feedback as untrusted data", async () => {
@@ -111,9 +112,10 @@ describe("Gemini full-plan provider", () => {
     };
     await generateFullPlan(refinement);
     const [, options] = fetchMock.mock.calls[1] as [string, RequestInit];
-    const body = JSON.parse(String(options.body)) as {
-      systemInstruction: { parts: Array<{ text: string }> };
-      contents: Array<{ parts: Array<{ text: string }> }>;
+    if (typeof options.body !== "string") throw new Error("Expected a JSON request body.");
+    const body = JSON.parse(options.body) as unknown as {
+      systemInstruction: { parts: { text: string }[] };
+      contents: { parts: { text: string }[] }[];
       generationConfig: { maxOutputTokens: number };
     };
     expect(body.systemInstruction.parts[0]?.text).toContain("untrusted data");

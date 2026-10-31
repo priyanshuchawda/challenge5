@@ -12,6 +12,12 @@ import {
 
 loadEnvConfig(process.cwd(), true);
 
+function configuredModel(value: string | undefined, fallback: string): string {
+  const model = value?.trim();
+  if (model === undefined || model.length === 0) return fallback;
+  return model;
+}
+
 const syntheticInput: IdeaRequest = {
   type: "Birthday",
   date: "2027-06-12",
@@ -60,8 +66,10 @@ describe("live Gemini integration", () => {
     console.log(
       JSON.stringify({
         ok: true,
-        primaryModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
-        fallbackConfigured: Boolean(process.env.GEMINI_FALLBACK_MODEL || "gemini-3.8-flash"),
+        primaryModel: configuredModel(process.env.GEMINI_MODEL, "gemini-3.5-flash-lite"),
+        fallbackConfigured: Boolean(
+          configuredModel(process.env.GEMINI_FALLBACK_MODEL, "gemini-3.8-flash"),
+        ),
         schemaValid: true,
         generatedSuggestions: ideas.suggestions.length,
         refinedSuggestions: refinedIdeas.suggestions.length,

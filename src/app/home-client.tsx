@@ -75,7 +75,7 @@ export default function Home() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  function saveExpense(event: React.FormEvent<HTMLFormElement>) {
+  function saveExpense(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
       workspace.addExpenseToActivePlan({
@@ -93,7 +93,7 @@ export default function Home() {
     }
   }
 
-  function saveTask(event: React.FormEvent<HTMLFormElement>) {
+  function saveTask(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const parsed = taskDraftSchema.safeParse(taskDraft);
     if (!parsed.success) {
@@ -111,7 +111,7 @@ export default function Home() {
     setNotice("Task added to your plan.");
   }
 
-  function saveEvent(event: React.FormEvent<HTMLFormElement>) {
+  function saveEvent(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const candidate = {
       name: form.name,

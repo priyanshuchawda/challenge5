@@ -1,9 +1,9 @@
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { Sparkles, X } from "lucide-react";
 import { supportedCurrencies, type EventRequest } from "../schema";
 import { useModalDialog } from "./useModalDialog";
 
-export type NewEventForm = {
+export interface NewEventForm {
   name: string;
   type: EventRequest["type"];
   date: string;
@@ -12,14 +12,14 @@ export type NewEventForm = {
   currency: EventRequest["currency"];
   location: string;
   priorities: string;
-};
+}
 
 interface EventFormDialogProps {
   form: NewEventForm;
   error: string;
   onChange: (field: keyof NewEventForm, value: string) => void;
   onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
 }
 
 export function EventFormDialog({

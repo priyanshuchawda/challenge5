@@ -88,9 +88,11 @@ describe("materializeFullPlan", () => {
   });
 
   it("rejects duplicate budget categories before calculating the allocation", () => {
+    const firstBudgetItem = draft.budget.at(0);
+    if (!firstBudgetItem) throw new Error("Expected a budget item in the test draft.");
     const duplicate = {
       ...draft,
-      budget: [...draft.budget, { ...draft.budget[0]!, category: "venue" }],
+      budget: [...draft.budget, { ...firstBudgetItem, category: "venue" }],
     };
     expect(fullPlanDraftSchema.safeParse(duplicate).success).toBe(false);
   });

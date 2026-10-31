@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { ListTodo, X } from "lucide-react";
 import type { TaskDraft } from "../schema";
 import { useModalDialog } from "./useModalDialog";
@@ -7,7 +7,7 @@ interface TaskDialogProps {
   task: TaskDraft;
   onChange: (field: keyof TaskDraft, value: string) => void;
   onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
 }
 
 export function TaskDialog({ task, onChange, onClose, onSubmit }: TaskDialogProps) {

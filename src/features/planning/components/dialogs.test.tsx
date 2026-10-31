@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -10,6 +10,7 @@ import {
   requireForm,
   validFullPlanResponse,
 } from "../../../../tests/fixtures/planning-components";
+import { fullPlanRefinementRequestSchema } from "../schema";
 import { AIPlanPanel } from "./AIPlanPanel";
 import { EventFormDialog } from "./EventFormDialog";
 import { ExpenseDialog } from "./ExpenseDialog";
@@ -33,7 +34,7 @@ describe("accessible planning dialogs", () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const onClose = vi.fn();
-    const onSubmit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault());
+    const onSubmit = vi.fn((event: SyntheticEvent<HTMLFormElement>) => event.preventDefault());
     const form = {
       name: "",
       type: "Wedding" as const,
@@ -125,7 +126,7 @@ describe("accessible planning dialogs", () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const onClose = vi.fn();
-    const onSubmit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault());
+    const onSubmit = vi.fn((event: SyntheticEvent<HTMLFormElement>) => event.preventDefault());
     render(
       <TaskDialog
         task={{ title: "", dueDate: "2026-11-01", priority: "Medium", category: "Planning" }}
@@ -156,7 +157,7 @@ describe("accessible planning dialogs", () => {
   it("submits expense data and closes from the backdrop", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
-    const onSubmit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault());
+    const onSubmit = vi.fn((event: SyntheticEvent<HTMLFormElement>) => event.preventDefault());
     const onAmountChange = vi.fn();
     render(
       <ExpenseDialog
@@ -216,7 +217,7 @@ describe("accessible planning dialogs", () => {
     const onApply = vi.fn();
     const onLanguageChange = vi.fn();
     const fetchMock = vi
-      .fn()
+      .fn<typeof fetch>()
       .mockImplementation(() => Promise.resolve(jsonResponseForComponent(validFullPlanResponse)));
     vi.stubGlobal("fetch", fetchMock);
     render(
@@ -235,9 +236,13 @@ describe("accessible planning dialogs", () => {
     await user.type(screen.getByLabelText("Refine this plan"), "Keep the venue budget modest");
     await user.click(screen.getByRole("button", { name: "Refine AI plan" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Updated AI plan is ready");
-    const refineBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)) as {
-      feedback: string;
-    };
+    const requestOptions = fetchMock.mock.calls[1]?.[1];
+    if (!requestOptions || typeof requestOptions.body !== "string") {
+      throw new Error("Expected the refinement request to contain a JSON body.");
+    }
+    const refineBody = fullPlanRefinementRequestSchema.parse(
+      JSON.parse(requestOptions.body) as unknown,
+    );
     expect(refineBody.feedback).toBe("Keep the venue budget modest");
     await user.click(screen.getByRole("button", { name: "Apply this plan" }));
     expect(onApply).toHaveBeenCalledWith(validFullPlanResponse.plan);

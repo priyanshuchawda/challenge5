@@ -28,11 +28,11 @@ describe("local plan storage boundary", () => {
   });
 
   it("migrates previously saved plans with no expense or vendor fields", () => {
-    const legacy = structuredClone(plan) as Record<string, unknown>;
+    const legacy = structuredClone(plan) as unknown as Record<string, unknown>;
     delete legacy.expenses;
     delete legacy.vendors;
     delete legacy.runOfShow;
-    legacy.budget = (legacy.budget as Array<Record<string, unknown>>).map((allocation) => {
+    legacy.budget = (legacy.budget as Record<string, unknown>[]).map((allocation) => {
       const previous = { ...allocation };
       delete previous.spent;
       return previous;
@@ -111,6 +111,7 @@ describe("browser storage adapter", () => {
     vi.stubGlobal("window", undefined);
     expect(getPlansSnapshot()).toBeNull();
     expect(() => savePlans([plan])).not.toThrow();
-    expect(subscribeToPlans(vi.fn())()).toBeUndefined();
+    const unsubscribe = subscribeToPlans(vi.fn());
+    unsubscribe();
   });
 });

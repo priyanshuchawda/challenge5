@@ -12,9 +12,6 @@ export function applyAIPlan(current: EventPlan, proposalInput: AIPlan): EventPla
   const proposal = fullPlanResponseSchema.shape.plan.parse(proposalInput);
   const proposedTotal = proposal.budget.reduce((sum, item) => sum + item.amount, 0);
   const allocations = proposal.budget.map((item, index) => {
-    const existing = current.budget.find(
-      (entry) => entry.category.toLocaleLowerCase() === item.category.toLocaleLowerCase(),
-    );
     const scaled =
       proposedTotal > 0
         ? Math.floor((item.amount * current.request.budget) / proposedTotal)
@@ -25,7 +22,7 @@ export function applyAIPlan(current: EventPlan, proposalInput: AIPlan): EventPla
     return {
       category: item.category,
       amount: scaled,
-      color: item.color ?? existing?.color ?? "#728a67",
+      color: item.color,
       spent: 0,
     };
   });

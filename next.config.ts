@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  async headers() {
-    return [
+  headers() {
+    return Promise.resolve([
       {
         source: "/api/:path*",
         headers: [
@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
         ],
       },
-    ];
+    ]);
   },
   turbopack: {
     rules: {

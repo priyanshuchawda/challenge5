@@ -8,10 +8,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@upstash/redis", () => ({
-  Redis: class {
-    constructor(config: unknown) {
-      mocks.redisConstructor(config);
-    }
+  Redis: function Redis(config: unknown) {
+    mocks.redisConstructor(config);
   },
 }));
 

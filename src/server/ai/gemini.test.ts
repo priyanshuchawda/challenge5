@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { generateEventIdeas } from "./gemini";
+import { GeminiError } from "./gemini-client";
 import { eventRequestSchema } from "@/features/planning/schema";
 
 const input = eventRequestSchema.parse({
@@ -65,8 +66,9 @@ describe("Gemini planning provider", () => {
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain("/models/gemini-3.5-flash-lite:generateContent");
     expect((options.headers as Record<string, string>)["x-goog-api-key"]).toBe("test-key");
-    expect(String(options.body)).not.toContain("Test celebration");
-    expect(String(options.body)).toContain("Step-free access");
+    if (typeof options.body !== "string") throw new Error("Expected a JSON request body.");
+    expect(options.body).not.toContain("Test celebration");
+    expect(options.body).toContain("Step-free access");
   });
 
   it("shares an identical in-flight request and releases the key after completion", async () => {
@@ -105,7 +107,7 @@ describe("Gemini planning provider", () => {
 
   it("continues provider calls when the in-flight deduplication registry is at capacity", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
-    const pendingResponses: Array<(response: Response) => void> = [];
+    const pendingResponses: ((response: Response) => void)[] = [];
     const fetchMock = vi.fn(
       () => new Promise<Response>((resolve) => pendingResponses.push(resolve)),
     );
@@ -173,9 +175,10 @@ describe("Gemini planning provider", () => {
 
     await expect(generateEventIdeas(refinement)).resolves.toEqual(validIdeas);
     const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-    const requestBody = JSON.parse(String(options.body)) as {
-      systemInstruction: { parts: Array<{ text: string }> };
-      contents: Array<{ parts: Array<{ text: string }> }>;
+    if (typeof options.body !== "string") throw new Error("Expected a JSON request body.");
+    const requestBody = JSON.parse(options.body) as unknown as {
+      systemInstruction: { parts: { text: string }[] };
+      contents: { parts: { text: string }[] }[];
       generationConfig: { maxOutputTokens: number };
     };
     expect(requestBody.systemInstruction.parts[0]?.text).toContain("untrusted data");
@@ -226,10 +229,12 @@ describe("Gemini planning provider", () => {
     const fetchMock = vi.fn().mockRejectedValue(new TypeError("network unavailable"));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(generateEventIdeas(input)).rejects.toMatchObject({
-      status: "unavailable",
-      cause: expect.any(TypeError),
-    });
+    const error = await generateEventIdeas(input).catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(GeminiError);
+    if (error instanceof GeminiError) {
+      expect(error.status).toBe("unavailable");
+      expect(error.cause).toBeInstanceOf(TypeError);
+    }
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 

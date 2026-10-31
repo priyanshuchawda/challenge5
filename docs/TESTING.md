@@ -26,19 +26,19 @@ pnpm test:gemini:live
 ```
 
 This live smoke test is excluded from normal Vitest runs and CI. Both live Gemini smoke tests passed
-on 2026-10-31 with synthetic event details. This confirms current connectivity and schema
+on 2026-11-01 with synthetic event details. This confirms current connectivity and schema
 compatibility; it does not guarantee future provider availability or quota.
 
 ## Coverage and scope
 
-On 2026-10-31, Vitest reported 120 passing tests and:
+On 2026-11-01, Vitest reported 120 passing tests and:
 
 | Measure    | Result | Enforced minimum |
 | ---------- | -----: | ---------------: |
 | Statements | 97.94% |              97% |
-| Branches   | 93.34% |              93% |
+| Branches   | 93.79% |              93% |
 | Functions  | 95.78% |              95% |
-| Lines      | 98.13% |              98% |
+| Lines      | 98.14% |              98% |
 
 Coverage includes application TypeScript and TSX modules while excluding test files and Next.js
 entry files `src/app/layout.tsx`, `src/app/page.tsx`, and `src/proxy.ts`. The production-browser

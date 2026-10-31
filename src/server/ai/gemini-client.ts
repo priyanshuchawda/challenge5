@@ -37,14 +37,14 @@ function generatedText(value: unknown): string {
           .object({
             content: z
               .object({
-                parts: z.array(z.object({ text: z.string().optional() }).passthrough()),
+                parts: z.array(z.object({ text: z.string().optional() }).loose()),
               })
-              .passthrough(),
+              .loose(),
           })
-          .passthrough(),
+          .loose(),
       ),
     })
-    .passthrough()
+    .loose()
     .safeParse(value);
 
   if (!parsed.success) throw new GeminiError("invalid_output");
@@ -75,6 +75,11 @@ function shouldUseFallback(error: unknown): error is GeminiError {
       (error.status === "unavailable" &&
         (error.httpStatus === undefined || error.httpStatus >= 500)))
   );
+}
+
+function configuredModel(value: string | undefined, fallback: string): string {
+  const model = value?.trim();
+  return model && model.length > 0 ? model : fallback;
 }
 
 async function requestModel<T>(
@@ -128,8 +133,8 @@ export async function generateGeminiJson<T>(request: GeminiJsonRequest<T>): Prom
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new GeminiError("unavailable");
 
-  const primaryModel = process.env.GEMINI_MODEL || DEFAULT_PRIMARY_MODEL;
-  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || DEFAULT_FALLBACK_MODEL;
+  const primaryModel = configuredModel(process.env.GEMINI_MODEL, DEFAULT_PRIMARY_MODEL);
+  const fallbackModel = configuredModel(process.env.GEMINI_FALLBACK_MODEL, DEFAULT_FALLBACK_MODEL);
   const key = createHash("sha256")
     .update(JSON.stringify({ primaryModel, fallbackModel, request }))
     .digest("hex");

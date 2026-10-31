@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { plansSchema } from "../src/features/planning/schema";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/planner");
@@ -77,7 +78,7 @@ test("refines AI suggestions from an untrusted text request without changing sav
 test("generates, refines, and applies a full AI plan while preserving completed tasks and actual expenses", async ({
   page,
 }) => {
-  const requests: Array<Record<string, unknown>> = [];
+  const requests: Record<string, unknown>[] = [];
   let call = 0;
   await page.route("**/api/plan", async (route) => {
     requests.push(route.request().postDataJSON() as Record<string, unknown>);
@@ -194,9 +195,9 @@ test("generates, refines, and applies a full AI plan while preserving completed 
   await page.getByLabel("Description").fill("Venue deposit");
   await page.getByLabel("Amount (INR)").fill("25000");
   await page.getByRole("button", { name: /Save expense/i }).click();
-  const before = await page.evaluate(
-    () => JSON.parse(localStorage.getItem("gatherwise.plans.v1") ?? "[]")[0],
-  );
+  const beforeStorage = await page.evaluate(() => localStorage.getItem("gatherwise.plans.v1"));
+  const before = plansSchema.parse(JSON.parse(beforeStorage ?? "[]") as unknown).at(0);
+  if (!before) throw new Error("Expected the event plan to be saved before applying AI changes.");
   const completedBefore = before.tasks
     .filter((task: { completed: boolean }) => task.completed)
     .map((task: { title: string }) => task.title);
@@ -224,9 +225,9 @@ test("generates, refines, and applies a full AI plan while preserving completed 
   });
 
   await page.getByRole("button", { name: "Apply this plan" }).click();
-  const after = await page.evaluate(
-    () => JSON.parse(localStorage.getItem("gatherwise.plans.v1") ?? "[]")[0],
-  );
+  const afterStorage = await page.evaluate(() => localStorage.getItem("gatherwise.plans.v1"));
+  const after = plansSchema.parse(JSON.parse(afterStorage ?? "[]") as unknown).at(0);
+  if (!after) throw new Error("Expected the event plan to remain saved after applying AI changes.");
   expect(after.expenses).toEqual(expensesBefore);
   expect(
     after.tasks
@@ -242,7 +243,9 @@ test("generates, refines, and applies a full AI plan while preserving completed 
   expect(after.budget.find((item: { category: string }) => item.category === "Venue")?.spent).toBe(
     25000,
   );
-  expect(after.vendors[0].status).toBe("Researching");
+  const firstVendor = after.vendors.at(0);
+  if (!firstVendor) throw new Error("Expected the applied AI plan to include a vendor.");
+  expect(firstVendor.status).toBe("Researching");
   await page.reload();
   await expect(page.getByRole("button", { name: "AI planning", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Timeline & vendors", exact: true }).click();

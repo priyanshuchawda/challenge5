@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { ReceiptText, X } from "lucide-react";
 import type { EventPlan } from "../schema";
 import { useModalDialog } from "./useModalDialog";
@@ -12,7 +12,7 @@ interface ExpenseDialogProps {
   onDescriptionChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
 }
 
 export function ExpenseDialog({

@@ -93,13 +93,14 @@ This live smoke test uses API quota. Ordinary tests do not call Gemini.
 
 ## Quality checks
 
-The current local verification run includes 120 passing unit and component tests, 97.94% statement
-coverage, 93.34% branch coverage, 95.78% function coverage, 98.13% line coverage, and 10 passing
-Playwright journeys. The browser suite also checks axe accessibility on the landing page at desktop
-and mobile sizes, core planner views, and security headers. These are measured project checks, not a
-claim of perfect accessibility or security.
+The latest local verification run (2026-11-01) includes 120 passing unit and component tests, 97.94%
+statement coverage, 93.79% branch coverage, 95.78% function coverage, 98.14% line coverage, and 10
+passing Playwright journeys. Type-aware strict TypeScript ESLint rules check the application and
+test code for unsafe values and problematic patterns. The browser suite also checks axe
+accessibility on planner views at desktop and mobile sizes, plus security headers. These are
+measured project checks, not a claim of perfect accessibility or security.
 
-The optional live Gemini suite also passed both smoke tests with synthetic inputs on 2026-10-31. It
+The optional live Gemini suite also passed both smoke tests with synthetic inputs on 2026-11-01. It
 uses API quota and stays separate from ordinary tests and CI.
 
 GitHub Actions runs these checks on pushes and pull requests targeting `main`, and can also be

@@ -62,7 +62,7 @@ export const runOfShowItemSchema = z.object({
 });
 export type RunOfShowItem = z.infer<typeof runOfShowItemSchema>;
 
-export type EventPlan = {
+export interface EventPlan {
   id: string;
   request: EventRequest;
   tasks: PlanTask[];
@@ -71,7 +71,7 @@ export type EventPlan = {
   vendors: Vendor[];
   runOfShow: RunOfShowItem[];
   createdAt: string;
-};
+}
 
 const planSchema = z.object({
   id: z.string().min(1).max(100),

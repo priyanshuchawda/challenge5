@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import type { EventPlan, TaskDraft } from "@/features/planning/schema";
 import { EventFormDialog, type NewEventForm } from "@/features/planning/components/EventFormDialog";
 import { ExpenseDialog } from "@/features/planning/components/ExpenseDialog";
@@ -17,15 +17,15 @@ interface WorkspaceDialogsProps {
   taskDraft: TaskDraft;
   onEventFormChange: (field: keyof NewEventForm, value: string) => void;
   onEventClose: () => void;
-  onEventSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onEventSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
   onExpenseCategoryChange: (value: string) => void;
   onExpenseDescriptionChange: (value: string) => void;
   onExpenseAmountChange: (value: string) => void;
   onExpenseClose: () => void;
-  onExpenseSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onExpenseSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
   onTaskChange: (field: keyof TaskDraft, value: string) => void;
   onTaskClose: () => void;
-  onTaskSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onTaskSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
 }
 
 export function WorkspaceDialogs({
