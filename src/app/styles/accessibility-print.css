@@ -1,0 +1,208 @@
+.eyebrow,
+.workspace-label,
+.side-label,
+.stat-label,
+.photo-tag,
+.guest-pile small,
+.event-list-copy span,
+.detail-intro,
+.idea-disclaimer,
+.profile-copy small,
+.help-card p,
+.breadcrumb,
+.subtitle,
+.stat-foot,
+.countdown small,
+.task-date,
+.bottom-note p span,
+.privacy-note,
+.progress-ring small,
+.event-form label small {
+  color: #46564a;
+}
+.event-type,
+.text-button,
+.help-card button,
+.countdown,
+.countdown span {
+  color: #344f3c;
+}
+.topbar kbd {
+  color: #536256;
+}
+.search-box input::placeholder {
+  color: #59675d;
+}
+.event-type {
+  color: #405d46;
+}
+.more-button {
+  color: #536256;
+}
+.event-meta {
+  color: #4c5d50;
+}
+.stat-foot .trend.up {
+  color: #47694a;
+}
+.trend.down {
+  color: #735f35;
+}
+.stat-value small {
+  color: #536256;
+}
+.priority-high {
+  color: #81473f;
+}
+.priority-medium {
+  color: #765a2d;
+}
+.priority-low {
+  color: #4f674a;
+}
+.task-done .task-copy strong {
+  color: #59675c;
+}
+.add-task {
+  color: #4c604e;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+@media (max-width: 800px) {
+  .timeline-vendor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 540px) {
+  .budget-summary {
+    gap: 6px;
+  }
+  .budget-summary > div {
+    padding: 9px 7px;
+  }
+  .budget-summary strong {
+    font-size: 13px;
+  }
+  .timeline-task {
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .timeline-task time {
+    grid-column: 2;
+    text-align: left;
+  }
+  .expense-table {
+    min-width: 460px;
+  }
+}
+@media (max-width: 800px) {
+  .run-of-show-heading {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .export-actions {
+    display: flex;
+    gap: 7px;
+  }
+  .run-of-show-table {
+    min-width: 850px;
+  }
+  .run-of-show-table-wrap {
+    overflow: auto;
+  }
+}
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+    font-size: 11pt;
+  }
+  .sidebar,
+  .topbar,
+  .page-heading > .primary-button,
+  .notice,
+  .help-card,
+  .profile-button,
+  .bottom-note,
+  .footer,
+  .export-actions,
+  .budget-note,
+  .expense-heading button,
+  .task-row input,
+  .vendor-status-label select,
+  .search-box,
+  .icon-button {
+    display: none !important;
+  }
+  .app-shell,
+  .main-area,
+  .content {
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .content {
+    max-width: none !important;
+  }
+  .detail-page {
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .run-of-show-section,
+  .workflow-section,
+  .vendor-card,
+  .timeline-task,
+  .budget-summary > div {
+    break-inside: avoid;
+  }
+  .run-of-show-heading {
+    margin-bottom: 12pt;
+  }
+  .run-of-show-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .run-of-show-table th,
+  .run-of-show-table td,
+  .expense-table th,
+  .expense-table td {
+    border: 1px solid #aaa !important;
+    padding: 5pt !important;
+    color: #111 !important;
+  }
+  .run-of-show-table input {
+    width: 100%;
+    min-width: 0;
+    border: 0 !important;
+    background: transparent !important;
+    color: #111 !important;
+    font-size: 9pt !important;
+  }
+  .run-of-show-table-wrap,
+  .expense-table-wrap {
+    overflow: visible !important;
+  }
+  .timeline-vendor-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .timeline-task input {
+    position: static;
+    opacity: 1;
+    appearance: auto;
+  }
+  .budget-alert {
+    border: 1px solid #900 !important;
+    color: #600 !important;
+  }
+}

@@ -1,0 +1,205 @@
+.event-banner {
+  min-height: 209px;
+  display: grid;
+  grid-template-columns: 29% 1fr 157px;
+  border: 1px solid #e9ece6;
+  border-radius: 11px;
+  background: white;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.banner-photo {
+  position: relative;
+  min-height: 209px;
+  background: #aabb9f url("/garden-event.svg") center 54% / cover no-repeat;
+}
+.photo-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(24, 43, 29, 0.11), rgba(24, 43, 29, 0));
+}
+.photo-tag {
+  position: absolute;
+  top: 16px;
+  left: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.91);
+  color: #607260;
+  padding: 6px 8px;
+  border-radius: 20px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #78a076;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+.banner-main {
+  padding: 15px 21px 14px;
+}
+.banner-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.event-type {
+  display: inline-block;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: #f1f4ef;
+  color: #405d46;
+  font-size: 9px;
+  font-weight: 600;
+}
+.more-button {
+  border: 0;
+  background: none;
+  color: #536256;
+  font-size: 20px;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+.banner-main h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 21px;
+  letter-spacing: -0.3px;
+  margin: 11px 0 9px;
+}
+.event-meta {
+  display: flex;
+  gap: 17px;
+  color: #4c5d50;
+  font-size: 10px;
+}
+.event-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.event-meta svg {
+  color: #81917e;
+}
+.banner-bottom {
+  margin-top: 21px;
+  padding-top: 11px;
+  border-top: 1px solid #eff1ed;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.guest-pile {
+  display: flex;
+  align-items: center;
+}
+.guest-pile > span {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  margin-right: -5px;
+  border: 2px solid white;
+  border-radius: 50%;
+  font-size: 8px;
+  background: #e9d7c7;
+  color: #775e48;
+}
+.guest-pile > span:nth-child(2) {
+  background: #d6e1d3;
+  color: #4b6950;
+}
+.guest-pile > span:nth-child(3) {
+  background: #eed6d9;
+  color: #8b5f68;
+}
+.guest-pile > span.guest-more {
+  background: #f1f3ee;
+  color: #536256;
+}
+.guest-pile small {
+  font-size: 9px;
+  color: #929b92;
+  margin-left: 12px;
+}
+.guest-pile small strong {
+  color: #536256;
+}
+.countdown {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #839084;
+}
+.countdown span {
+  font-family: Georgia, serif;
+  color: #49644d;
+  font-size: 17px;
+}
+.countdown small {
+  font-size: 9px;
+}
+.banner-side {
+  border-left: 1px solid #edf0eb;
+  background: #fcfdfa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 13px;
+}
+.side-label {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #a0a99f;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.progress-ring {
+  width: 81px;
+  height: 81px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(#789678 var(--progress), #edf1e9 0);
+  position: relative;
+}
+.progress-ring:before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: #fcfdfa;
+}
+.progress-ring div {
+  z-index: 1;
+  text-align: center;
+  display: grid;
+  gap: 2px;
+}
+.progress-ring strong {
+  font-family: Georgia, serif;
+  font-size: 19px;
+  font-weight: 500;
+  color: #405f46;
+}
+.progress-ring small {
+  font-size: 8px;
+  color: #9aa49a;
+}
+.text-button {
+  border: 0;
+  background: none;
+  color: #5d765f;
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+.text-button span {
+  padding-left: 4px;
+}

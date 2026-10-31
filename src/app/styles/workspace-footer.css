@@ -1,0 +1,56 @@
+.bottom-note {
+  margin-top: 14px;
+  min-height: 56px;
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid #ebece4;
+  border-radius: 8px;
+  background: #f6f7f1;
+}
+.note-spark {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #ecefdf;
+  color: #90945e;
+}
+.bottom-note p {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  margin: 0;
+}
+.bottom-note p strong {
+  font-size: 10px;
+  color: #596a51;
+}
+.bottom-note p span {
+  font-size: 9px;
+  color: #939b88;
+}
+.bottom-note button {
+  border: 0;
+  background: none;
+  font-size: 9px;
+  font-weight: 600;
+  color: #405a45;
+  white-space: nowrap;
+}
+.bottom-note button span {
+  padding-left: 4px;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 19px 1px 0;
+  color: #adb4ac;
+  font-size: 8px;
+}
+.heart {
+  color: #cd928d;
+  padding-left: 2px;
+}
