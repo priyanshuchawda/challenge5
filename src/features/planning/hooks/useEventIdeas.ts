@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ideasResponseSchema, type EventIdeas, type EventPlan } from "../schema";
+import { type EventIdeas, type EventPlan } from "../schema";
+import { requestEventIdeas } from "../ai-client";
 
 export function useEventIdeas() {
   const [ideas, setIdeas] = useState<EventIdeas | null>(null);
@@ -37,30 +38,12 @@ export function useEventIdeas() {
     };
 
     try {
-      const response = await fetch("/api/ideas", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify(
-          refinementText && ideas
-            ? { ...eventContext, refinement: refinementText, currentIdeas: ideas }
-            : eventContext,
-        ),
-      });
-      const body: unknown = await response.json();
-      if (!response.ok) {
-        const detail =
-          body && typeof body === "object" && "error" in body && typeof body.error === "string"
-            ? body.error
-            : "AI ideas are temporarily unavailable.";
-        throw new Error(detail);
-      }
-
-      const parsed = ideasResponseSchema.safeParse(body);
-      if (!parsed.success) {
-        throw new Error("The AI returned an incomplete response. Your saved plan is unchanged.");
-      }
-      setIdeas(parsed.data.ideas);
+      const payload =
+        refinementText && ideas
+          ? { ...eventContext, refinement: refinementText, currentIdeas: ideas }
+          : eventContext;
+      const response = await requestEventIdeas(payload, controller.signal);
+      setIdeas(response.ideas);
       if (refinementText) setRefinement("");
     } catch (cause) {
       if (!controller.signal.aborted) {

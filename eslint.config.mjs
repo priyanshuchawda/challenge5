@@ -11,6 +11,8 @@ const eslintConfig = defineConfig([
     extends: [tseslint.configs.strictTypeChecked, tseslint.configs.stylisticTypeChecked],
     languageOptions: { parserOptions: { projectService: true } },
     rules: {
+      complexity: ["error", 12],
+      "max-depth": ["error", 4],
       "@typescript-eslint/no-confusing-void-expression": ["error", { ignoreArrowShorthand: true }],
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
     },

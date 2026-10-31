@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
-import { fullPlanResponseSchema, type EventPlan, type FullPlanResponse } from "../schema";
+import { type EventPlan, type FullPlanResponse } from "../schema";
+import { requestFullPlan } from "../ai-client";
 import { AIPlanProposal } from "./AIPlanProposal";
 
 type AIPlan = FullPlanResponse["plan"];
@@ -40,26 +41,12 @@ export function AIPlanPanel({ plan, language, onLanguageChange, onApply }: AIPla
     setError("");
     setMessage("");
     try {
-      const response = await fetch("/api/plan", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          ...eventContext(plan, language),
-          ...(refine && result ? { feedback: feedback.trim(), previousPlan: result } : {}),
-        }),
-      });
-      const body: unknown = await response.json();
-      if (!response.ok) {
-        const detail =
-          body && typeof body === "object" && "error" in body && typeof body.error === "string"
-            ? body.error
-            : "AI planning is temporarily unavailable.";
-        throw new Error(detail);
-      }
-      const parsed = fullPlanResponseSchema.safeParse(body);
-      if (!parsed.success)
-        throw new Error("The AI response was incomplete. Your saved plan is unchanged.");
-      setResult(parsed.data.plan);
+      const payload = {
+        ...eventContext(plan, language),
+        ...(refine && result ? { feedback: feedback.trim(), previousPlan: result } : {}),
+      };
+      const response = await requestFullPlan(payload);
+      setResult(response.plan);
       setMessage(refine ? "Updated AI plan is ready to review." : "AI plan is ready to review.");
       if (refine) setFeedback("");
     } catch (cause) {

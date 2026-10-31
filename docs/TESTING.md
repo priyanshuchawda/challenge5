@@ -31,14 +31,14 @@ compatibility; it does not guarantee future provider availability or quota.
 
 ## Coverage and scope
 
-On 2026-11-01, Vitest reported 126 passing tests and:
+On 2026-11-01, Vitest reported 130 passing tests and:
 
 | Measure    | Result | Enforced minimum |
 | ---------- | -----: | ---------------: |
-| Statements | 97.98% |            97.5% |
-| Branches   | 95.40% |              95% |
-| Functions  | 95.96% |            95.5% |
-| Lines      | 98.18% |              98% |
+| Statements | 98.01% |            97.5% |
+| Branches   | 95.21% |              95% |
+| Functions  | 96.13% |            95.5% |
+| Lines      | 98.19% |              98% |
 
 Coverage includes application TypeScript and TSX modules while excluding test files and Next.js
 entry files `src/app/layout.tsx`, `src/app/page.tsx`, and `src/proxy.ts`. The production-browser
@@ -56,5 +56,6 @@ vendors, and Inspiration at 1440px and 390px viewport widths.
 
 `.github/workflows/quality.yml` runs on pushes and pull requests targeting `main`, and supports
 manual dispatch. It installs from the frozen pnpm lockfile, audits production dependencies, runs
-format/type/dead-code/lint/coverage checks, builds the app, and runs Playwright. CI has no provider
-secrets; AI unit and browser tests use controlled responses.
+format/type/dead-code/lint/coverage checks, builds the app, and runs Playwright. Type-aware linting
+also limits cyclomatic complexity to 12 and nesting depth to four. CI has no provider secrets; AI
+unit and browser tests use controlled responses.

@@ -30,6 +30,7 @@ export const eventIdeasSchema = z.object({
 export type IdeaRequest = z.infer<typeof ideaRequestSchema>;
 export type EventIdeas = z.infer<typeof eventIdeasSchema>;
 export const ideasResponseSchema = z.object({ ideas: eventIdeasSchema });
+export type IdeasResponse = z.infer<typeof ideasResponseSchema>;
 
 export const ideaRefinementRequestSchema = ideaRequestSchema.extend({
   refinement: z.string().trim().min(3).max(300),

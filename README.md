@@ -93,12 +93,13 @@ This live smoke test uses API quota. Ordinary tests do not call Gemini.
 
 ## Quality checks
 
-The latest local verification run (2026-11-01) includes 126 passing unit and component tests, 97.98%
-statement coverage, 95.40% branch coverage, 95.96% function coverage, 98.18% line coverage, and 10
+The latest local verification run (2026-11-01) includes 130 passing unit and component tests, 98.01%
+statement coverage, 95.21% branch coverage, 96.13% function coverage, 98.19% line coverage, and 10
 passing Playwright journeys. Type-aware strict TypeScript ESLint rules check the application and
-test code for unsafe values and problematic patterns. The browser suite also checks axe
-accessibility on planner views at desktop and mobile sizes, plus security headers. These are
-measured project checks, not a claim of perfect accessibility or security.
+test code for unsafe values and problematic patterns; ESLint also enforces a cyclomatic-complexity
+ceiling of 12 and a maximum nesting depth of four. The browser suite checks axe accessibility on
+planner views at desktop and mobile sizes, plus security headers. These are measured project checks,
+not a claim of perfect accessibility or security.
 
 The optional live Gemini suite also passed both smoke tests with synthetic inputs on 2026-11-01. It
 uses API quota and stays separate from ordinary tests and CI.
